@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-bad
+  labels:
+    security: bad
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.27          # nginx słuchający na 80 — wymaga roota
+      ports:
+        - containerPort: 80

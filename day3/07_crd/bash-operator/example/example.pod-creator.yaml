@@ -1,8 +1,0 @@
-apiVersion: bash-operators.maciej/v1alpha1
-kind: PodCreator
-metadata:
-  name: example-pod-creator
-spec:
-  createSvc: test
-  createPod: maciej 
-  imageName: nginx

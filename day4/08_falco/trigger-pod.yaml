@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: innocent-app
+  labels:
+    purpose: falco-demo
+spec:
+  containers:
+    - name: app
+      image: alpine:3.19
+      command: ["sleep", "infinity"]

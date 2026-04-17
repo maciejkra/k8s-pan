@@ -1,0 +1,22 @@
+# 5.1.5: Ensure that default service accounts are not actively used
+# Remediation: ustaw automountServiceAccountToken: false na wszystkich default SA
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default
+  namespace: default
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default
+  namespace: kube-system
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default
+  namespace: kube-public
+automountServiceAccountToken: false

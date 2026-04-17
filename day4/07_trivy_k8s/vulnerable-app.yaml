@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log4shell-vuln
+  labels:
+    demo: trivy-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log4shell
+  template:
+    metadata:
+      labels:
+        app: log4shell
+    spec:
+      containers:
+        - name: app
+          # Stary obraz Java z log4j 2.14 — CVE-2021-44228 (Log4Shell) i wiele innych
+          image: vulhub/log4j:2.8.1
+          # Aplikacja nie musi działać poprawnie — Trivy skanuje obraz, nie traffic

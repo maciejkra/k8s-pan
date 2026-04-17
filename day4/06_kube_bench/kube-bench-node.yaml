@@ -1,0 +1,30 @@
+# Wariant z DaemonSet — uruchamia kube-bench na każdym node
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-bench-node
+spec:
+  selector:
+    matchLabels:
+      app: kube-bench-node
+  template:
+    metadata:
+      labels:
+        app: kube-bench-node
+    spec:
+      hostPID: true
+      containers:
+        - name: kube-bench
+          image: aquasec/kube-bench:latest
+          command: ["kube-bench", "run", "--targets", "node"]
+          volumeMounts:
+            - { name: var-lib-kubelet, mountPath: /var/lib/kubelet, readOnly: true }
+            - { name: etc-kubernetes,  mountPath: /etc/kubernetes,  readOnly: true }
+            - { name: etc-systemd,     mountPath: /etc/systemd,     readOnly: true }
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+      restartPolicy: Always
+      volumes:
+        - { name: var-lib-kubelet, hostPath: { path: /var/lib/kubelet } }
+        - { name: etc-kubernetes,  hostPath: { path: /etc/kubernetes } }
+        - { name: etc-systemd,     hostPath: { path: /etc/systemd } }

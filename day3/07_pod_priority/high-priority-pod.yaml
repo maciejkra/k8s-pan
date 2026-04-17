@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: critical-payment
+  labels:
+    tier: critical
+spec:
+  priorityClassName: high-priority
+  containers:
+    - name: payment
+      image: nginx:1.27-alpine
+      resources:
+        requests:
+          cpu: "1500m"          # duża część rdzenia — wymusi wywłaszczenie
+          memory: "1Gi"
+        limits:
+          cpu: "1500m"
+          memory: "1Gi"

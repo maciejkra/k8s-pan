@@ -1,0 +1,6 @@
+failure-threshold: warning
+ignored:
+  - DL3008    # Pin versions in apt-get install (akceptujemy w demo)
+trustedRegistries:
+  - docker.io
+  - gcr.io

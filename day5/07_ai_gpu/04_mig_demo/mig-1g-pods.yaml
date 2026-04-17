@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      name: inference-small-1
+      labels: { mig-demo: "true", mig-profile: 1g.5gb }
+    spec:
+      containers:
+        - { name: app, image: ubuntu:22.04, command: ["sleep", "3600"],
+            resources: { limits: { nvidia.com/mig-1g.5gb: 1 } } }
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      name: inference-small-2
+      labels: { mig-demo: "true", mig-profile: 1g.5gb }
+    spec:
+      containers:
+        - { name: app, image: ubuntu:22.04, command: ["sleep", "3600"],
+            resources: { limits: { nvidia.com/mig-1g.5gb: 1 } } }
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      name: inference-small-3
+      labels: { mig-demo: "true", mig-profile: 1g.5gb }
+    spec:
+      containers:
+        - { name: app, image: ubuntu:22.04, command: ["sleep", "3600"],
+            resources: { limits: { nvidia.com/mig-1g.5gb: 1 } } }

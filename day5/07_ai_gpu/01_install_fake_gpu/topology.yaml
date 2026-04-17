@@ -1,0 +1,26 @@
+topology:
+  nodePools:
+    default:
+      gpuProduct: Tesla-A100
+      gpuCount: 4
+      gpuMemory: 40                     # GB — typowa A100
+  mig:
+    enabled: true
+    strategy: mixed                     # mixed | single | none
+    profiles:
+      - name: 1g.5gb
+        instances: 7
+      - name: 3g.20gb
+        instances: 2
+
+# fake-gpu-operator value overrides
+node-deployer:
+  enabled: true
+device-plugin:
+  enabled: true
+status-updater:
+  enabled: true
+status-exporter:
+  enabled: true                         # DCGM exporter mock
+kwokDeployment:
+  enabled: false                        # set true jeśli nie chcesz używać prawdziwych nodów K3d

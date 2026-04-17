@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: batch-workers
+  labels:
+    tier: batch
+spec:
+  replicas: 8                  # wypełnij klaster
+  selector:
+    matchLabels:
+      tier: batch
+  template:
+    metadata:
+      labels:
+        tier: batch
+    spec:
+      priorityClassName: low-priority
+      containers:
+        - name: worker
+          image: busybox:1.36
+          command: ["sh", "-c", "while true; do echo working; sleep 30; done"]
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"

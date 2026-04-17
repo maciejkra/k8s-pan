@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: critical-svc
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: critical-svc
+  template:
+    metadata:
+      labels:
+        app: critical-svc
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: critical-svc
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: critical-svc-pdb
+spec:
+  minAvailable: 3              # zawsze 3 z 4 muszą żyć podczas planowanych ewikcji
+  selector:
+    matchLabels:
+      app: critical-svc

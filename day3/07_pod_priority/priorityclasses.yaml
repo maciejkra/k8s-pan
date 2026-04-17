@@ -1,0 +1,16 @@
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: high-priority
+value: 1000
+globalDefault: false
+description: "Krytyczne workload aplikacyjne — wywłaszczają niski priorytet."
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: low-priority
+value: -10
+globalDefault: false
+preemptionPolicy: Never        # te Pody same nikogo nie wywłaszczą — będą tylko ofiarami
+description: "Batch jobs / CI — pierwsze do wyrzucenia."

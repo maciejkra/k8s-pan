@@ -1,0 +1,1 @@
+# Pusty - app.py używa tylko stdlib. Plik zachowany dla layout multi-stage build.
