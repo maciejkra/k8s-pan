@@ -58,7 +58,7 @@ W przeglądarce z renderowanym HTML naciśnij `P` — otwiera się drugie okno z
 
 - **Tytuł sekcji** = duży nagłówek + ikona dnia (D1/D2/.../D5)
 - **Code blocks** = monospace, syntax highlighting (Marp default theme)
-- **Cross-link** do ćwiczeń jako: `→ day1/03_dockerfile_optimization/`
+- **Cross-link** do ćwiczeń jako: `→ day1/02_secure_image/`
 - **Speaker notes** (HTML comments): `<!-- to widzi tylko prowadzący -->`
 - **Style**: każdy `dayN.md` ma w frontmatter `style:` z custom CSS — zmniejszony font + spacing tak żeby wszystkie slajdy mieściły się na jednej stronie
 

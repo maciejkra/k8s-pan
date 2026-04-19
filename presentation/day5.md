@@ -55,7 +55,7 @@ helm template ./mychart --debug   # render bez install
 - `02_happy_panda/` — chart z artifacthub.io (OCI)
 - `03_own_chart/` — własny chart (Python+Redis)
 
-→ `day5/02_helm/`
+→ `day5/01_helm/`
 
 ---
 
@@ -92,7 +92,7 @@ Zawiera:
 - **node-exporter** (DaemonSet, per-node metrics)
 - **kube-state-metrics** (K8s objects metrics)
 
-→ `day5/04_monitoring_alerting/`
+→ `day5/02_monitoring_alerting/`
 
 ---
 
@@ -158,7 +158,7 @@ sudo kubeadm join ...
 
 **Alternatywy**: kops (AWS), kubespray (Ansible), k3s/RKE2 (lekki), EKS/GKE/AKS (managed)
 
-→ `day5/06_install/`
+→ `day5/03_install/`
 
 ---
 
@@ -173,7 +173,7 @@ sudo kubeadm join ...
 ✅ Scheduling logic, MIG, multi-GPU, taints, autoscaling
 ❌ Faktyczne CUDA workloady (mock metrics)
 
-→ `day5/07_ai_gpu/`
+→ `day5/04_ai_gpu/`
 
 ---
 
@@ -195,7 +195,7 @@ sudo kubeadm join ...
    └── GPU Feature Discovery
 ```
 
-→ `day5/07_ai_gpu/01_install_fake_gpu/`
+→ `day5/04_ai_gpu/01_install_fake_gpu/`
 
 ---
 
@@ -217,7 +217,7 @@ resources:
 
 **Strategia**: `single` (cały klaster jeden profile) vs `mixed` (różne)
 
-→ `day5/07_ai_gpu/04_mig_demo/`
+→ `day5/04_ai_gpu/04_mig_demo/`
 
 ---
 
@@ -235,7 +235,7 @@ ResourceFlavor → ClusterQueue (quota) → LocalQueue → Workload
 
 **Alternatywy**: Volcano, YuniKorn
 
-→ `day5/07_ai_gpu/05_kueue_intro.md`
+🎤 *Tylko prezentacja* (zbyt obszerne na warsztat)
 
 ---
 
@@ -250,7 +250,7 @@ ResourceFlavor → ClusterQueue (quota) → LocalQueue → Workload
 
 **Grafana dashboard 12239** — DCGM Exporter Dashboard
 
-→ `day5/07_ai_gpu/06_dcgm_concepts.md`
+🎤 *Tylko prezentacja* (wymaga prawdziwego GPU)
 
 ---
 
@@ -262,7 +262,7 @@ ResourceFlavor → ClusterQueue (quota) → LocalQueue → Workload
 ✅ **Image pre-loading** (Spegel) — 5GB pull × 100 nodów = 500GB
 ✅ **Cost monitoring** (OpenCost / Kubecost)
 
-→ `day5/07_ai_gpu/07_production_practices.md`
+🎤 *Tylko prezentacja* (przegląd best practices)
 
 ---
 

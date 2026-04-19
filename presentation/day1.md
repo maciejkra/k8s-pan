@@ -60,7 +60,7 @@ Maciej Krajewski · 2026
 
 **Efekt**: 1200 MB → 150 MB, build time -60%
 
-→ `day1/03_dockerfile_optimization/`
+🎤 *Demo na żywo* (kontynuacja `02_secure_image`)
 
 ---
 
@@ -77,7 +77,7 @@ trivy image --severity HIGH,CRITICAL --exit-code 1 myapp:v1
 
 **W CI**: `aquasecurity/trivy-action` z exit-code → blokuje merge
 
-→ `day1/04_image_scanning_trivy/`
+🎤 *Demo na żywo*: `trivy image vuln-app:v1`
 
 ---
 
@@ -93,7 +93,7 @@ cosign verify --key cosign.pub myapp:v1
 - **SBOM** = Software Bill of Materials (lista wszystkich komponentów)
 - **Rekor** = transparency log (publiczny audit trail)
 
-→ `day1/05_image_signing_cosign/`
+🎤 *Tylko prezentacja* (wg agendy: "przegląd")
 
 ---
 
@@ -111,7 +111,7 @@ Checklist:
 
 **Obraz musi być bezpieczny** *nawet jeśli* uruchomi się bez SecurityContext klastra
 
-→ `day1/06_hardening/`
+🎤 *Pokazane w `02_secure_image`*
 
 ---
 

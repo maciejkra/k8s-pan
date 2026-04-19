@@ -258,7 +258,7 @@ Każdy Pod bez labela `owner` → admission webhook deny.
 **Kiedy**: 50+ microservices, zero-trust, mTLS compliance
 **NIE**: monolit + 2-3 services, brak platform team
 
-→ `day4/10_service_mesh_intro.md`
+🎤 *Tylko prezentacja* (porównanie 3 mesh)
 
 ---
 
@@ -275,7 +275,7 @@ Każdy Pod bez labela `owner` → admission webhook deny.
 
 **Frameworks**: MITRE ATT&CK Containers, NSA/CISA K8s Hardening Guide
 
-→ `day4/11_cluster_pentest_intro.md`
+🎤 *Tylko prezentacja* + linki (kube-hunter, MITRE)
 
 ---
 
@@ -295,7 +295,7 @@ git → CI build → Trivy scan → Cosign sign + SBOM → registry
 
 **SLSA framework**: L1-L4 dojrzałości supply chain
 
-→ `day4/12_supply_chain.md`
+🎤 *Tylko prezentacja* (cross-link D1 + D4 OPA)
 
 ---
 
