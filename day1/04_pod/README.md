@@ -45,12 +45,6 @@ W tym ćwiczeniu tworzymy "goły" Pod tylko dla nauki — żeby zrozumieć podst
    curl localhost:8080
    ```
 
-## Pytania kontrolne
-1. Co się stanie gdy usunę Pod (`kubectl delete pod`)? Czy się odtworzy?
-2. Czemu Pod (a nie kontener) jest jednostką schedulingu?
-3. `port-forward` — przez co idzie ruch? (Hint: TCP tunnel przez API server)
-4. Pod ma dwa kontenery — jak wybrać do którego idzie `kubectl logs`?
-
 ## Linki
 - [Pods](https://kubernetes.io/docs/concepts/workloads/pods/)
 - [Pod lifecycle](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/)

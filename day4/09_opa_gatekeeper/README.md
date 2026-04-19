@@ -105,11 +105,6 @@ Kiedy OPA, kiedy Kyverno:
 - **OPA** — masz już OPA w innym kontekście (CI policy, Terraform), chcesz spójność
 - **Kyverno** — start od zera, prostsze use cases, mutate (np. dodaj label automatycznie) bardziej intuicyjny
 
-## Pytania kontrolne
-1. Co to jest `enforcementAction: dryrun`? Kiedy używać?
-2. Validating vs Mutating admission webhook — Gatekeeper jest którym? (Hint: oba — Mutation dostępna od 3.x)
-3. Audit Interval (default 60s) — czemu nie real-time?
-4. ConstraintTemplate vs CRD — to jest CRD generujący CRD-y?
 
 ## Linki
 - [Gatekeeper docs](https://open-policy-agent.github.io/gatekeeper/website/docs/)

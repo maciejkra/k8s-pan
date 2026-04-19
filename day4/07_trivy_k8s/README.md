@@ -65,11 +65,6 @@ W D1/04 skanowaliśmy obrazy **przed** deployem (CI). To nie wystarczy:
    # Można je zwizualizować w Grafanie (D5/04)
    ```
 
-## Pytania kontrolne
-1. Czemu `ignoreUnfixed: true`? Jakie ryzyko?
-2. Trivy Operator vs aqua-trivy `trivy k8s` CLI — kiedy które?
-3. Jak częsty re-skan ustawić w produkcji? (Hint: trade-off load vs freshness)
-4. Co zrobić z VulnerabilityReport które wskazują CRITICAL CVE? Auto-rollback? Notification?
 
 ## Linki
 - [Trivy Operator docs](https://aquasecurity.github.io/trivy-operator/)

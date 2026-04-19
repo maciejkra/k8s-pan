@@ -61,7 +61,7 @@ Rekomendacja: użyć WSL2 z Ubuntu i zainstalować jak w sekcji Linux.
 kubectl get nodes
 ```
 
-Skrypt postawi K3d cluster (3 nody) + zainstaluje Envoy Gateway, cert-manager, metrics-server. fake-gpu-operator instaluje się osobno (D5/07).
+Skrypt postawi K3d cluster (3 nody) + zainstaluje Envoy Gateway, cert-manager, metrics-server. fake-gpu-operator instaluje się osobno (D5/04).
 
 ## Reset klastra
 
@@ -91,4 +91,4 @@ helm repo update
 | `metrics-server` CrashLoopBackOff na K3d | Skrypt setup automatycznie dodaje `--kubelet-insecure-tls` |
 | Envoy Gateway nie odpowiada | `kubectl get svc -n envoy-gateway-system` — sprawdź LoadBalancer; na K3d porty są mapowane przez `--port` flagę |
 | cert-manager challenge nie przechodzi | Lokalnie używaj **staging** Let's Encrypt + ngrok/cloudflared dla publicznego DNS, lub testuj samosignowane przez ClusterIssuer typu CA |
-| `nvidia.com/gpu` resource not found | `helm install fake-gpu-operator …` z odpowiednim ConfigMap topology — patrz `day5/07_ai_gpu/01_install_fake_gpu/` |
+| `nvidia.com/gpu` resource not found | `helm install fake-gpu-operator …` z odpowiednim ConfigMap topology — patrz `day5/04_ai_gpu/01_install_fake_gpu/` |

@@ -54,11 +54,6 @@ Dla aplikacji użytkownika definiujemy własne klasy (typowo: 1000 = high, 100 =
    kubectl delete -f high-priority-pod.yaml -f low-priority-deployment.yaml -f priorityclasses.yaml
    ```
 
-## Pytania kontrolne
-1. Co to znaczy `globalDefault: true`? Co się stanie z Podami bez `priorityClassName`?
-2. `preemptionPolicy: Never` — kiedy się to opłaca?
-3. Jaki jest związek priority z QoS class (Guaranteed/Burstable/BestEffort)?
-4. Czy preemption respektuje PodDisruptionBudget? (Hint: krótko od K8s 1.27)
 
 ## Linki
 - [Pod Priority and Preemption](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/)

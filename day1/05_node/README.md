@@ -47,12 +47,6 @@ Każdy node uruchamia:
    kubectl get pods -A -o wide | grep <node-name>
    ```
 
-## Pytania kontrolne
-1. `Capacity` vs `Allocatable` na node — jaka różnica? (Hint: system reserved)
-2. Co znaczy condition `MemoryPressure` lub `DiskPressure`? Jak K8s reaguje?
-3. Co to jest `kubelet` i jakie ma odpowiedzialności?
-4. Czy można uruchomić Pod bezpośrednio przez kubelet (bez API server)? (Hint: static pods)
-
 ## Linki
 - [Nodes architecture](https://kubernetes.io/docs/concepts/architecture/nodes/)
 - [Node pressure eviction](https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/)

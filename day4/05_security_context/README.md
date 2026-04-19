@@ -61,11 +61,6 @@ Najważniejsze pola:
    kubectl apply -n secure -f pod-hardened.yaml     # OK
    ```
 
-## Pytania kontrolne
-1. Co dokładnie robi `allowPrivilegeEscalation: false`?
-2. `runAsNonRoot: true` bez `runAsUser` — jak K8s decyduje o UID? (Hint: image USER)
-3. NET_BIND_SERVICE — kiedy potrzebne? Jak tego uniknąć w obrazie?
-4. seccomp `RuntimeDefault` vs `Unconfined` vs `Localhost` (custom profile) — kiedy które?
 
 ## Linki
 - [Configure SecurityContext](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)

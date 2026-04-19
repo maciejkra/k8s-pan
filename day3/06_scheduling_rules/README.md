@@ -26,7 +26,7 @@ Trzy mechanizmy user-facing:
 
 ## Przykłady produkcyjne
 
-- **GPU node pool** (D5/07): taint `nvidia.com/gpu=true:NoSchedule` + nodeSelector `nvidia.com/gpu.present=true` na GPU workloads
+- **GPU node pool** (D5/04): taint `nvidia.com/gpu=true:NoSchedule` + nodeSelector `nvidia.com/gpu.present=true` na GPU workloads
 - **Spot instances**: taint `spot=true:NoSchedule` + toleration na Podach tolerujących interruption
 - **Multi-zone HA**: TSC `maxSkew: 1, topologyKey: topology.kubernetes.io/zone` — każda zone dostaje równą liczbę replik
 - **Database leader isolation**: podAntiAffinity `required` + `topologyKey: kubernetes.io/hostname` — nie 2 repliki DB na jednym node

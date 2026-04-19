@@ -59,4 +59,4 @@ Zobaczyć MIG profile w działaniu — jak jedno fizyczne A100 (80GB) jest dziel
 1. MIG jest **statyczny** czy **dynamiczny**? (Czy można w runtime zmienić profile?)
 2. Strategy `single` vs `mixed` — jaka różnica?
 3. Co się stanie jeśli żaden node nie ma profile `nvidia.com/mig-3g.40gb` a Pod o niego prosi?
-4. Jak monitorować utilization MIG instances? (Hint: DCGM exporter — D5/07/06)
+4. Jak monitorować utilization MIG instances? (Hint: DCGM exporter — slajd prezentacji D5).

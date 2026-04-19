@@ -20,47 +20,11 @@ Use cases: PostgreSQL, MySQL, MongoDB, Cassandra, Kafka, Elasticsearch, Redis Cl
 
 ## Prereqs
 - K3d/Kind cluster
+- Wdrożona aplikacja Python+Redis z **D1/10** (Python Deployment zostaje, Redis Deployment **wymieniamy** na StatefulSet)
 
 ## Zadanie
 
-1. Wdroż StatefulSet:
-   ```bash
-   kubectl apply -f .
-   kubectl get pods -w
-   # nginx-stsf-0 → Ready → nginx-stsf-1 → Ready → nginx-stsf-2 → Ready (sekwencyjnie!)
-   ```
-
-2. Sprawdź stable network identity (DNS per Pod):
-   ```bash
-   kubectl exec -ti nginx-stsf-0 -- curl localhost
-   kubectl exec -ti nginx-stsf-0 -- curl nginx-stsf-1.stsf-service
-   kubectl exec -ti nginx-stsf-0 -- curl nginx-stsf-1.stsf-service.default.svc.cluster.local
-   ```
-
-3. Usuń pojedynczy Pod i obserwuj:
-   ```bash
-   kubectl delete pod nginx-stsf-1
-   kubectl get pods -w
-   # Wraca z **tym samym** imieniem (nginx-stsf-1)
-   ```
-
-4. Skala down:
-   ```bash
-   kubectl scale sts nginx-stsf --replicas=2
-   # Usuwa nginx-stsf-2 (najwyższy ordinal)
-   ```
-
-5. PVC per Pod (jeśli volumeClaimTemplates są w manifeście):
-   ```bash
-   kubectl get pvc
-   # Po jednym PVC dla każdego Pod
-   ```
-
-## Pytania kontrolne
-1. Headless Service (`clusterIP: None`) jest **wymagane** dla StatefulSet — dlaczego?
-2. Co się stanie gdy usunę cały StatefulSet? Czy PVC zostają?
-3. StatefulSet vs operator (np. PostgreSQL Operator) — kiedy które?
-4. Dlaczego **bazy danych w K8s** są kontrowersyjne? (Hint: trade-off)
+Patrz [`task.md`](./task.md). Główny scenariusz: **wymień Redis Deployment z D1/10 na Redis StatefulSet** z `volumeClaimTemplates` i AOF persistence (`redis.statefulset.yaml`). Bazowy `nginx.statefulset.yaml` służy jako prostsze demo zachowania (sekwencyjne start, per-Pod DNS, stable identity).
 
 ## Linki
 - [StatefulSet basics](https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/)

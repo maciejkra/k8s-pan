@@ -37,7 +37,7 @@ Poznać najprostsze typy volumes: tymczasowy (`emptyDir`), node-local (`hostPath
    ```
 
 ## Pytania kontrolne
-1. emptyDir + multi-container Pod — czy kontenery dzielą pliki? (cross-link D1/13)
+1. emptyDir + multi-container Pod — czy kontenery dzielą pliki? (cross-link D1/12)
 2. hostPath a `readOnly: true` — czy wystarczy do hardeningu?
 3. subPath — typowe use case z ConfigMap?
 4. Co się stanie gdy Pod zostanie przełożony na inny node (rescheduling) przy hostPath?

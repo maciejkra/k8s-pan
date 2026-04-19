@@ -76,11 +76,6 @@ cordon → drain (z PDB) → patch / reboot → uncordon
    ```
    Drain natychmiast usunie wszystkie repliki — ryzyko downtime.
 
-## Pytania kontrolne
-1. Czemu `--ignore-daemonsets` w `drain`? Co by się stało bez tej flagi?
-2. PDB `minAvailable: 50%` vs `maxUnavailable: 1` — kiedy które?
-3. Co jeśli drain nie może zakończyć (PDB zablokowany)? Jak to debugować?
-4. Jak `kubectl drain` interaguje z PriorityClass z poprzedniego ćwiczenia?
 
 ## Linki
 - [Safely drain a node](https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/)

@@ -8,6 +8,6 @@ spec:
     name: letsencrypt-staging
     kind: ClusterIssuer
   dnsNames:
-    - app.example.com           # ZMIEŃ na swoją domenę
+    - python.<TWOJ-PUBLICZNY-IP>.nip.io   # ZMIEŃ — np. python.203-0-113-7.nip.io
   duration: 2160h               # 90 dni
   renewBefore: 360h             # odnowienie 15 dni przed wygaśnięciem

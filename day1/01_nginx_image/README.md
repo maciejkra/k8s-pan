@@ -71,12 +71,6 @@ Porównaj:
 - Co byłoby gdyby `nginx` byłby aplikacją która **musi** zapisywać do `/var/log`?
 - Jak doliczyć `HEALTHCHECK` żeby Docker wiedział że nginx odpowiada?
 
-## Pytania kontrolne
-1. Dlaczego `apk add --no-cache` jest lepsze niż `apk add --update` + `rm -rf /var/cache/apk/*`?
-2. `COPY . ./` na końcu — co konkretnie skopiuje? Co z plikami `.git/`, `*.md`?
-3. `CMD nginx` vs `CMD ["nginx", "-g", "daemon off;"]` — która forma jest poprawna i dlaczego?
-4. Po co `.dockerignore`? W którym momencie buildu jest używany?
-
 ## Linki
 - [Dockerfile reference](https://docs.docker.com/engine/reference/builder/)
 - [Best practices](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/)

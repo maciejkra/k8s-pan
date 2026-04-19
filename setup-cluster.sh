@@ -44,6 +44,6 @@ kubectl get nodes
 echo ""
 echo "Cluster '$CLUSTER_NAME' gotowy."
 echo "Następne kroki:"
-echo "  - D5/07 GPU:        helm install gpu-operator fake-gpu-operator/fake-gpu-operator -f day5/07_ai_gpu/01_install_fake_gpu/topology.yaml"
+echo "  - D5/04 GPU:        helm install gpu-operator fake-gpu-operator/fake-gpu-operator -f day5/04_ai_gpu/01_install_fake_gpu/topology.yaml"
 echo "  - D4/04 Vault:      patrz day4/04_vault/README.md"
-echo "  - D5/04 Monitoring: patrz day5/04_monitoring_alerting/README.md"
+echo "  - D5/02 Monitoring: patrz day5/02_monitoring_alerting/README.md"

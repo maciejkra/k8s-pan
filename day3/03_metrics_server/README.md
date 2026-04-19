@@ -53,11 +53,6 @@ minikube addons list
 minikube addons enable metrics-server
 ```
 
-## Pytania kontrolne
-1. Czy metrics-server zastąpi Prometheus? Dlaczego nie?
-2. Co znaczy `--kubelet-insecure-tls` i kiedy NIE używać w produkcji?
-3. Po co api `metrics.k8s.io` jeśli można bezpośrednio scrapować kubelet?
-4. Co potrzebuje metrics-server żeby działać na klastrze z aggregation layer disabled? (Hint: nie zadziała)
 
 ## Linki
 - [Metrics Server repo](https://github.com/kubernetes-sigs/metrics-server)

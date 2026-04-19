@@ -41,11 +41,6 @@ Postawić lokalny klaster Kubernetes (Kind), zweryfikować dostęp i poznać pod
    kubectl konfig import -s <kubeconfig-file>
    ```
 
-## Pytania kontrolne
-1. Co to jest current-context i jak go zmienić bez `kubectl config use-context`?
-2. `kubectl get pods -v=9` — w jakich sytuacjach poziom verbose 9 jest potrzebny?
-3. Kind vs Minikube vs K3d — kluczowe różnice?
-4. Co się stanie z kubeconfig gdy zrobisz `kind delete cluster`?
 
 ## Linki
 - [Kind quick start](https://kind.sigs.k8s.io/docs/user/quick-start/)

@@ -16,7 +16,7 @@ Defaults:
 - `--horizontal-pod-autoscaler-downscale-stabilization=5m` — żeby nie flapowało (powolny scale-down)
 
 **VPA (Vertical Pod Autoscaler)** = analogicznie ale zmienia **resources** (requests/limits) — patrz oddzielny komponent.
-**Cluster Autoscaler / Karpenter** = dodaje/usuwa nody (D5/07 GPU + production_practices).
+**Cluster Autoscaler / Karpenter** = dodaje/usuwa nody (D5/04 GPU + slajd prezentacji "GPU production practices").
 
 ## Prereqs
 - K3d/Kind cluster z **metrics-server** (D3/03)
@@ -47,11 +47,6 @@ Defaults:
 
 4. Zatrzymaj load (Ctrl+C). Po ~5 min replicas zaczną spadać.
 
-## Pytania kontrolne
-1. Dlaczego scale-down jest wolniejszy niż scale-up? (Hint: stabilization window)
-2. HPA + VPA jednocześnie — czemu konflikt? (Hint: oba zmieniają coś dla schedulera)
-3. CPU-based HPA dla aplikacji **memory-bound** — co źle?
-4. Custom metric (np. RPS z Prometheus) — kiedy lepszy niż CPU?
 
 ## Linki
 - [HPA walkthrough](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/)

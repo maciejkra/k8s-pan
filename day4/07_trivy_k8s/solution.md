@@ -81,4 +81,4 @@ kubectl get vulnerabilityreports -A -o json | \
 ## Cross-link
 - D1/04 — Trivy CLI (build time)
 - D5/04 — Grafana dashboard 17813 dla Trivy Operator metrics
-- D4/12 — supply chain (jak Cosign chroni przed podstawieniem obrazu *po* skanie)
+- prezentacja D4 — supply chain (jak Cosign chroni przed podstawieniem obrazu *po* skanie)

@@ -91,11 +91,6 @@ kubectl exec -ti "$POD" -- curl my-app-service
 kubectl get rs          # stare ReplicaSet-y dla rollback history
 ```
 
-## Pytania kontrolne
-1. `maxSurge` vs `maxUnavailable` — jak wpływają na szybkość rollout i availability?
-2. Deployment → ReplicaSet → Pod — po co 3 warstwy? Czemu nie Deployment → Pod?
-3. Ile rollout history zachować w produkcji? (Hint: `revisionHistoryLimit`)
-4. `kubectl apply` vs `kubectl rollout restart` — co robi każde?
 
 ## Wyzwanie (task) — Python+Redis na K8s
 

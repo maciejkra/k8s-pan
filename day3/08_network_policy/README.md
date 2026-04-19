@@ -55,11 +55,6 @@ Bez `default-deny` wszystkie nowe Pody mają full komunikację — łatwo zapomn
            - podSelector: { matchLabels: { app: frontend } }
    ```
 
-## Pytania kontrolne
-1. NetworkPolicy + Flannel — czemu nie działa? Co zrobić?
-2. Pod wewnątrz namespace `prod` — domyślnie może rozmawiać z `kube-system`?
-3. Egress NetworkPolicy — kiedy stosować?
-4. NetworkPolicy nie wspiera namespace-level rules natywnie — co robić? (Hint: namespaceSelector + labelowanie ns)
 
 ## Linki
 - [Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
@@ -72,4 +67,4 @@ Bez `default-deny` wszystkie nowe Pody mają full komunikację — łatwo zapomn
 
 [Spreadsheet — porównanie CNI providers](https://docs.google.com/spreadsheets/d/1qCOlor16Wp5mHd6MQxB5gUEQILnijyDLIExEpqmee2k/edit#gid=0)
 
-Service Mesh — patrz **D4/10** (markdown teoretyczny).
+Service Mesh — patrz prezentacja **D4 — Service Mesh** (Istio/Linkerd/Cilium).

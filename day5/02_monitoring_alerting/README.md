@@ -84,11 +84,6 @@ spec:
             summary: "Error rate > 5% przez 5 min"
 ```
 
-## Pytania kontrolne
-1. Prometheus vs Datadog — co Prometheus NIE potrafi?
-2. ServiceMonitor vs PodMonitor — kiedy które?
-3. Loki vs Elasticsearch (ELK) — kluczowe różnice?
-4. Jak rotować retention danych w Prometheus (default 15 dni)?
 
 ## Linki
 - [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
@@ -98,4 +93,4 @@ spec:
 ## Cross-link
 - D4/07 Trivy Operator → eksportuje metryki o CVE → wizualizacja w Grafanie (dashboard 17813)
 - D4/08 Falco → events do Loki (przez Falcosidekick)
-- D5/07 GPU → DCGM Exporter dashboard 12239
+- D5/04 GPU → DCGM Exporter dashboard 12239

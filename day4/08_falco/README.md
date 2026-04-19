@@ -64,11 +64,6 @@ Output: structured logs (JSON) → SIEM (Splunk, Datadog, Elastic) lub Falcoside
    kubectl logs -n falco -l app.kubernetes.io/name=falco --tail=20 | grep -i custom
    ```
 
-## Pytania kontrolne
-1. eBPF vs kernel module — kiedy które?
-2. Falco generuje DUŻO eventów. Jak filtrować w produkcji?
-3. Jak wyciągać alerty Falco do Slacka? (Hint: Falcosidekick)
-4. Falco wykrył shell w kontenerze — co dalej? (Auto-respond? Manual?)
 
 ## Linki
 - [Falco docs](https://falco.org/docs/)

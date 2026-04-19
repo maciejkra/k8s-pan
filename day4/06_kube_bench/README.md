@@ -62,11 +62,6 @@ W produkcji: kube-bench w cron Jobie + raporty do Grafana/Splunk/SIEM.
    kubectl apply -f kube-bench-node.yaml
    ```
 
-## Pytania kontrolne
-1. Dlaczego niektóre testy są `WARN` zamiast `FAIL`? (Hint: scored vs not scored)
-2. Co znaczy `[INFO] Some tests are Manual`? Jak je wykonać?
-3. Klastry managed (EKS/GKE/AKS) — czemu kube-bench ma osobne profile (`eks-1.5.0`, `gke-1.6.0`)?
-4. Jak zintegrować kube-bench w CI/CD klastra? (Hint: Argo CD pre-sync hook)
 
 ## Linki
 - [kube-bench docs](https://github.com/aquasecurity/kube-bench)

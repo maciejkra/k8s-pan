@@ -51,11 +51,6 @@ Dwa rozwiązania `kubectl debug`:
    kubectl delete pod myapp-debug
    ```
 
-## Pytania kontrolne
-1. Ephemeral containers wymagają jakiego K8s feature gate? (Hint: GA od 1.25)
-2. Dlaczego `--share-processes` w copy-to? Co to umożliwia?
-3. Czy ephemeral container może mieć inne SecurityContext niż main? (Hint: tak — to jego siła)
-4. Best practice: `nicolaka/netshoot` vs `busybox` vs `ubuntu` jako debug image?
 
 ## Linki
 - [Debug Running Pod](https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/#ephemeral-container)

@@ -46,12 +46,6 @@ Bez konwencji w 50+ Podach klastra szybko nie wiesz "co należy do czego".
    kubectl label pod/myapp-pod test-label-
    ```
 
-## Pytania kontrolne
-1. Czy Service używa labels czy selectors aby znaleźć Pody? Co dzieje się gdy Pod traci dopasowany label?
-2. Dlaczego `app.kubernetes.io/instance` istnieje obok `app.kubernetes.io/name`? (Hint: dwa releases tej samej app)
-3. Set-based vs equality-based selectors — które obsługują Service, a które ReplicaSet? Czemu różnica?
-4. Maks. długość label value? Co z znakami specjalnymi?
-
 ## Linki
 - [Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
 - [Common labels guidelines](https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/)

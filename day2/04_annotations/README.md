@@ -47,11 +47,6 @@ W odróżnieniu od labels — można w annotation zmieścić **dłuższe wartoś
    kubectl annotate pod "$POD" workshop.test-
    ```
 
-## Pytania kontrolne
-1. Można selectować Pod-y po annotations? (`kubectl get pods -l ann=val`)
-2. Po co `prometheus.io/scrape: "true"` jest annotation a nie label?
-3. `kubectl.kubernetes.io/last-applied-configuration` — co tam jest i czemu to się zmienia?
-4. Maks. rozmiar annotation? Co z bardzo dużymi metadata?
 
 ## Linki
 - [Annotations docs](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/)

@@ -39,11 +39,6 @@ Do istniejącego projektu python-redis dodaj volume dla redis (`/data`) używaj�
 
 2. Usuń redis deployment i dodaj ponownie — counter powinien pokazywać starą wartość (storage jest persistent).
 
-## Pytania kontrolne
-1. emptyDir.medium: Memory vs default — różnica w wydajności i rozliczeniu RAM?
-2. hostPath — dlaczego NIE w produkcji? (Hint: Pod może przejść na inny node)
-3. `accessModes: ReadWriteOnce` vs `ReadWriteMany` — które CSI wspiera RWX?
-4. Reclaim `Retain` w produkcji — jak uniknąć wycieku orphaned PV?
 
 ## Linki
 - [Volumes](https://kubernetes.io/docs/concepts/storage/volumes/)

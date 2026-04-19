@@ -51,11 +51,6 @@ Każde żądanie do API serwera K8s przechodzi przez:
    # no
    ```
 
-## Pytania kontrolne
-1. Default ServiceAccount — dlaczego trzeba ostrożnie z `automountServiceAccountToken: true`?
-2. Role vs ClusterRole — kiedy które?
-3. Co to są **aggregated ClusterRoles** (np. `view`, `edit`, `admin`)?
-4. Jak zaimplementować "team A widzi tylko swoje namespace, ale wszystkie klastry"? (Hint: ClusterRoleBinding + Group)
 
 ## Podkatalogi (różne strategie AuthN)
 

@@ -47,7 +47,7 @@ Każdy Service dostaje **DNS** w postaci `<service-name>.<namespace>.svc.cluster
 1. ClusterIP vs NodePort vs LoadBalancer — kiedy które?
 2. Co się stanie gdy Pod stracił label dopasowujący do Service `selector`?
 3. `search` w resolv.conf — dlaczego pozwala używać krótkiej nazwy `my-app-service` zamiast pełnego DNS?
-4. Co to jest `headless service` (`clusterIP: None`) i kiedy się przydaje? (Hint: StatefulSet w D2/08)
+
 
 ## Linki
 - [Service docs](https://kubernetes.io/docs/concepts/services-networking/service/)

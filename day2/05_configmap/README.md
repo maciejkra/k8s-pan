@@ -48,11 +48,6 @@ Dla większości aplikacji wybór: **mount jako pliki** + reagowanie na zmianę 
    # Zobaczysz że pliki się zmieniły (jeśli aplikacja je odczytuje na bieżąco)
    ```
 
-## Pytania kontrolne
-1. Dlaczego env vars **nie** auto-update'ują się przy zmianie ConfigMap?
-2. Jak aplikacja może "zauważyć" zmianę zamontowanego pliku? (Hint: inotify, polling)
-3. Stakater Reloader — jak działa? (Hint: hash w annotations + rollout)
-4. Co z **mocno** dynamiczną konfiguracją (zmienia się co sekundę)? (Hint: nie ConfigMap, użyj feature flag service)
 
 ## Linki
 - [ConfigMap docs](https://kubernetes.io/docs/concepts/configuration/configmap/)

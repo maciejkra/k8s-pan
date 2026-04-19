@@ -59,11 +59,6 @@ kubectl create secret tls my-tls-secret \
 # Użycie: certificateRefs.name: my-tls-secret w listener Gateway (D2/07)
 ```
 
-## Pytania kontrolne
-1. Czemu K8s Secrets są tylko base64, nie zaszyfrowane?
-2. Jak włączyć **encryption at rest** w etcd? (`--encryption-provider-config`)
-3. Vault (D4/04) vs SOPS vs Sealed Secrets — kiedy które?
-4. `imagePullSecrets` per Pod vs `imagePullSecrets` na ServiceAccount — która opcja?
 
 ## Linki
 - [Secret docs](https://kubernetes.io/docs/concepts/configuration/secret/)

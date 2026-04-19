@@ -17,7 +17,7 @@ Use cases:
 - **chmod/chown** — przygotuj uprawnienia volumes
 - **Generate config** — stwórz plik konfiguracyjny z env vars
 
-K8s 1.29+: native sidecar containers = init containers z `restartPolicy: Always` (D1/13).
+K8s 1.29+: native sidecar containers = init containers z `restartPolicy: Always` (cross-link D1/12).
 
 ## Prereqs
 - K3d/Kind cluster
@@ -50,11 +50,6 @@ K8s 1.29+: native sidecar containers = init containers z `restartPolicy: Always`
    # STATUS: Running
    ```
 
-## Pytania kontrolne
-1. Co się stanie gdy init container fail-uje?
-2. Init containers vs Job (do migracji DB) — kiedy które?
-3. Czy init container ma dostęp do secret/configmap volumes głównego Pod-a?
-4. Jak debugować zawieszający się init container? (Hint: `kubectl logs -c <init-name>`)
 
 ## Linki
 - [Init Containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/)

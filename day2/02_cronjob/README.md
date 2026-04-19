@@ -43,11 +43,6 @@ Use cases:
    kubectl get pod -l origin=cron-job
    ```
 
-## Pytania kontrolne
-1. Co zrobić gdy poprzedni Job jeszcze trwa, a nadszedł czas kolejnego? (`concurrencyPolicy`)
-2. CronJob K8s vs aplikacja z internal scheduler (Quartz, APScheduler) — kiedy które?
-3. Jak ograniczyć ilość zachowanych historicznych Job-ów? (Hint: `successfulJobsHistoryLimit`)
-4. Co się stanie gdy klaster jest down podczas `0 3 * * *`? Czy zadanie się wykona później?
 
 ## Linki
 - [CronJob docs](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/)

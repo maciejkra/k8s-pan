@@ -12,7 +12,7 @@ Trzy effecty:
 - **NoExecute** — jak NoSchedule + **ewikuje** istniejące Pody bez toleration
 
 Typowe produkcyjne use cases:
-- GPU nodes tainted — tylko GPU workloads (D5/07)
+- GPU nodes tainted — tylko GPU workloads (D5/04)
 - Spot instances tainted — tylko workloads tolerujące interruption
 - Dedicated node pools per team — `team=data-science:NoSchedule`
 

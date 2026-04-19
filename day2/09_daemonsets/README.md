@@ -49,11 +49,6 @@ Można ograniczyć przez `nodeSelector`/`affinity` (np. tylko nody GPU dostają 
    # Pod DaemonSet automatycznie zniknął
    ```
 
-## Pytania kontrolne
-1. Czy DaemonSet wyląduje na node'ach z taintami? (Hint: tolerations)
-2. DaemonSet update strategy — RollingUpdate vs OnDelete — kiedy które?
-3. Jak ograniczyć DaemonSet do GPU node'ów? (cross-link D5/07)
-4. DaemonSet vs sidecar (D1/13) dla log collection — porównanie?
 
 ## Linki
 - [DaemonSet docs](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/)

@@ -41,11 +41,6 @@ Mechanizmy: HTTP GET, TCP socket, exec command, gRPC (od K8s 1.27+).
 
 4. Zmień `initialDelaySeconds` w probe i obserwuj wpływ na restart count.
 
-## Pytania kontrolne
-1. Liveness=Readiness na tym samym endpoincie — antywzorzec? Dlaczego?
-2. Kiedy nie ustawiać Liveness probe wcale? (Hint: restart nie naprawi problemu)
-3. Startup probe — co rozwiązuje czego nie rozwiązują Liveness + `initialDelaySeconds`?
-4. Czemu probe HTTP powinno być **lekkie** (nie sprawdzać DB)?
 
 ## Linki
 - [Configure Liveness, Readiness and Startup Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)

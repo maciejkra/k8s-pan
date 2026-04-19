@@ -3,9 +3,7 @@
 5-dniowe szkolenie Docker + Kubernetes. Materiały bazują na [maciejkra/k8s-full](https://github.com/maciejkra/k8s-full), rozszerzone o security tools, Gateway API, AI/GPU.
 
 **Komponenty:**
-- 📋 [`AGENDA.md`](./AGENDA.md) — agenda szczegółowa: 5 dni × 7 bloków × 45 min, z godzinami i lab per blok
-- 📁 [`day1/` … `day5/`](#agenda--katalogi) — ćwiczenia praktyczne (manifesty + README + solution)
-- 🎤 [`presentation/pptx/dist/k8s-training-2026.pptx`](./presentation/pptx/dist/k8s-training-2026.pptx) — slajdy KubeCon-style (65 slajdów, PowerPoint). Build: `presentation/pptx/build.js`
+- 📁 [`day1/` … `day5/`](#agenda--katalogi) — ćwiczenia praktyczne (manifesty + README + task + solution)
 - 🛠️ [`setup-cluster.sh`](./setup-cluster.sh) — bootstrap lokalnego K3d klastra
 - 📋 [`SETUP.md`](./SETUP.md) — instalacja narzędzi (kubectl, helm, k3d, trivy, cosign…)
 
@@ -16,7 +14,7 @@
 kubectl get nodes
 ```
 
-Pełna instalacja narzędzi — patrz `SETUP.md`. Pełna agenda z godzinami — `AGENDA.md`.
+Pełna instalacja narzędzi — patrz `SETUP.md`.
 
 ## Mapa katalogów
 
@@ -36,7 +34,6 @@ Pełna instalacja narzędzi — patrz `SETUP.md`. Pełna agenda z godzinami — 
 | 10 | Deployment + rolling update + rollback | `day1/10_deployment` |
 | 11 | Namespaces | `day1/11_namespace` |
 | 12 | Multi-container Pod (sidecar pattern) | `day1/12_multi_container_pod` |
-| 13 | kubectl context (kubeconfig) | `day1/13_kubectl_context` |
 
 ### Dzień 2 — Workloady, AuthN/AuthZ, Gateway API
 

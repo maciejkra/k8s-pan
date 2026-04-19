@@ -57,11 +57,6 @@ Init containers są specjalnym przypadkiem (uruchamiają się **sekwencyjnie prz
    kubectl delete pod multi-container --grace-period=0 --force
    ```
 
-## Pytania kontrolne
-1. Dlaczego kontenery w Pod współdzielą sieć? (Hint: pause container)
-2. Co się stanie jeśli sidecar pada (CrashLoopBackOff), a app działa?
-3. Sidecar vs DaemonSet — kiedy które dla collection logów?
-4. Native sidecar containers (K8s 1.29+) — co to dodaje?
 
 ## Linki
 - [Multi-container Pods](https://kubernetes.io/docs/concepts/workloads/pods/#how-pods-manage-multiple-containers)

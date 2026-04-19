@@ -57,11 +57,6 @@ Trzy podejścia:
          message: "Deployment musi mieć min 2 repliki"
    ```
 
-## Pytania kontrolne
-1. Mutating przed Validating — czemu kolejność?
-2. Webhook timeout = 10s default — co się stanie gdy webhook padnie?
-3. ValidatingAdmissionPolicy (CEL) vs Gatekeeper (Rego) — kiedy które?
-4. Jak debugować "moja policy odrzuca wszystko"? (Hint: dryrun + audit logs apiserver)
 
 ## Linki
 - [Admission Controllers reference](https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/)

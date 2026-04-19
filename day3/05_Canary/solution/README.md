@@ -37,5 +37,5 @@ Rozwiązanie task z [`../README.md`](../README.md): Canary release z dwoma deplo
 
 - Canary i prod używają **tego samego Service** (selector `app=myapp`), różnią się labelem `version` (v1 / v2)
 - Procent ruchu = liczba replik / total
-- Dla precyzyjnego routingu (10%, 30%, 50%) używaj **Ingress canary** lub **Argo Rollouts** (cross-link D3/05 strategies.md)
+- Dla precyzyjnego routingu (10%, 30%, 50%) używaj **HTTPRoute weighted routing** (Gateway API) lub **Argo Rollouts** (cross-link D3/05 strategies.md)
 - PVC `accessModes: ReadWriteMany` jeśli oba deployments mają pisać; `ReadWriteOnce` + canary NA TYM SAMYM NODE jeśli pojedynczy reader

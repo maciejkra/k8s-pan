@@ -60,11 +60,6 @@ W praktyce **nie używamy ReplicaSet bezpośrednio** — Deployment (D1/11) twor
    kubectl get pod      # Pody zostały
    ```
 
-## Pytania kontrolne
-1. ReplicaSet vs ReplicationController (legacy)?
-2. Czy mogę zaktualizować image w ReplicaSet i istniejące Pody dostaną nowy image? (Hint: nie — to robi Deployment)
-3. Kiedy `--cascade=false` jest przydatne?
-4. Co się stanie jeśli ReplicaSet ma `replicas: 5` ale tylko 3 nody mają miejsce?
 
 ## Linki
 - [ReplicaSet docs](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/)

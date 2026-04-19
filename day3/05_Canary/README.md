@@ -1,7 +1,7 @@
 # 05 — Canary deployment + przegląd strategii
 
 ## Cel
-Wdrożyć **canary release** ręcznie (dwa Deploymenty + Ingress weighted routing). Zrozumieć kiedy canary, kiedy inne strategie.
+Wdrożyć **canary release** ręcznie (dwa Deploymenty + **HTTPRoute** weighted routing przez Gateway API). Zrozumieć kiedy canary, kiedy inne strategie.
 
 ## Kontekst
 Strategie wdrożeń = jak migrować od starej wersji do nowej bez downtime / z minimalnym ryzykiem:
@@ -17,8 +17,8 @@ Strategie wdrożeń = jak migrować od starej wersji do nowej bez downtime / z m
 W tym ćwiczeniu — **Canary ręcznie** (bez Argo Rollouts / Flagger). Cel: zobaczyć podstawowy mechanizm.
 
 ## Prereqs
-- K3d/Kind cluster
-- Ingress / Gateway (D2/07) — implementacja routingu
+- K3d cluster z `setup-cluster.sh` (Envoy Gateway zainstalowany)
+- Gateway API z **D2/07** (Gateway `training-gateway` w namespace `default`)
 
 ## Zadanie
 
@@ -28,9 +28,11 @@ W tym ćwiczeniu — **Canary ręcznie** (bez Argo Rollouts / Flagger). Cel: zob
    - `python-api` (v1) w namespace `prod`
    - `nginx` (v2) w namespace `canary`
 
-2. Stwórz Ingress / HTTPRoute z weighted routing:
-   - 70% ruchu → `python-api`
-   - 30% ruchu → `nginx`
+2. Stwórz **HTTPRoute** (Gateway API) z weighted routing — `backendRefs` z polem `weight`:
+   - 70 → `python-api`
+   - 30 → `nginx`
+
+   (Ponieważ Service-y są w innych namespace niż Gateway, dorzuć **`ReferenceGrant`** w obu namespace dla `HTTPRoute` z `default`.)
 
 3. Test:
    ```bash
@@ -38,7 +40,7 @@ W tym ćwiczeniu — **Canary ręcznie** (bez Argo Rollouts / Flagger). Cel: zob
    # ~70 hits python-api, ~30 hits nginx
    ```
 
-4. Stopniowo zwiększaj % nginx (50/50, 80/20, 100% nginx) — w produkcji tu byłaby pauza na monitoring metryk.
+4. Stopniowo zwiększaj `weight` po stronie nginx (50/50, 80/20, 100% nginx) — w produkcji tu byłaby pauza na monitoring metryk.
 
 ### Bonus — Argo Rollouts (rekomendowane w produkcji)
 
@@ -57,11 +59,6 @@ helm install argo-rollouts argo/argo-rollouts -n argo-rollouts --create-namespac
 
 → patrz `canary-demo/` w tym katalogu dla pełnego przykładu.
 
-## Pytania kontrolne
-1. Manual canary vs Argo Rollouts vs Flagger — kiedy które?
-2. Jak automatycznie rollback gdy nowa wersja ma więcej błędów? (Hint: AnalysisRun)
-3. Canary wymaga jakich metryk? (Hint: error rate, latency, custom business metric)
-4. Można robić canary BEZ service mesh? (Hint: tak — Ingress weighted routing)
 
 ## Linki
 - [Container Solutions: K8s Deployment Strategies](https://github.com/ContainerSolutions/k8s-deployment-strategies)

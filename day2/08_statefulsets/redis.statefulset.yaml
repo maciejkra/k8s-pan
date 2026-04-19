@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-headless
+  labels:
+    szkolenie: k8s
+spec:
+  clusterIP: None        # headless — wymagane dla per-Pod DNS w StatefulSet
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    name: redis
+---
+# Klient (np. python-deployment z D1/10) używa tego adresu.
+# REDIS_HOST = redis-servcie  (zachowujemy tę samą nazwę co w D1/10 dla kompatybilności)
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-servcie
+  labels:
+    szkolenie: k8s
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  labels:
+    szkolenie: k8s
+spec:
+  serviceName: redis-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+        szkolenie: k8s
+    spec:
+      containers:
+      - name: redis
+        image: redis:alpine
+        ports:
+        - containerPort: 6379
+        # AOF persistence — zapisuje każdą operację write na dysk
+        args: ["--appendonly", "yes", "--dir", "/data"]
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        livenessProbe:
+          exec:
+            command: ["redis-cli", "ping"]
+        readinessProbe:
+          tcpSocket:
+            port: 6379
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi

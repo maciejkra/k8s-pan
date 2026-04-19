@@ -52,11 +52,6 @@ Domyślne namespaces: `default`, `kube-system`, `kube-public`, `kube-node-lease`
    kubectl get pods -A                       # all namespaces
    ```
 
-## Pytania kontrolne
-1. Czy dwa Pod-y o tej samej nazwie mogą istnieć w dwóch różnych namespace?
-2. Czy Service w namespace `A` może rozmawiać z Pod w namespace `B`? (Hint: full DNS)
-3. Co się stanie gdy usuniesz namespace zawierający 100 Podów?
-4. Dlaczego StorageClass NIE jest namespaced?
 
 ## Linki
 - [Namespaces docs](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/)
