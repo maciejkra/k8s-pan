@@ -1,61 +1,127 @@
-# Create deployment
+# 11 — Deployment (rolling update, rollout history, rollback)
 
-```sh
-kubectl apply -f deployment.yaml
-kubectl get all
-kubectl scale deployment/nginx-deployment --replicas=0
-kubectl get all
-```
+## Cel
+Wdrożyć aplikację przez Deployment, skalować, wykonać rolling update, obserwować historię, rollback do poprzedniej wersji.
 
-# Use env variable
-add `env` list
+## Kontekst
+**Deployment** to wrapper nad ReplicaSet (D1/10) dodający:
+- **Rolling update** (default strategia) — stopniowa wymiana Pod-ów
+- **Recreate** (alternatywa) — restart wszystkich naraz
+- **Rollout history** — zapis poprzednich ReplicaSet-ów (default: ostatnie 10)
+- **Rollback** — przywrócenie poprzedniej wersji (`kubectl rollout undo`)
 
-```sh
-kubectl rollout history deployments/nginx-deployment
-kubectl apply -f deployment.yaml
+99% aplikacji stateless używa Deployment. StatefulSet (D2/08) dla stateful, DaemonSet (D2/09) dla per-node agentów.
 
-kubectl rollout status deployment/nginx-deployment
-kubectl rollout history deployment/nginx-deployment --revision=1
-kubectl rollout history deployment/nginx-deployment --revision=2
-kubectl annotate deployment/nginx-deployment kubernetes.io/change-cause="env updated"
-kubectl rollout history deployments/nginx-deployment
-```
+Szczegóły strategii wdrożeń: patrz [`day3/05_Canary/strategies.md`](../../day3/05_Canary/strategies.md).
 
-# Exec container and check env exists:
+## Prereqs
+- K3d/Kind cluster
 
-```sh
-kubectl get pods
-kubectl get pods -l app=myapp -o jsonpath='{.items[0].metadata.name}'
-kubectl exec -ti $(kubectl get pods -l app=myapp -o jsonpath='{.items[0].metadata.name}') -- env | grep TEST_ENV
-```
+## Zadanie
 
-# Rollback to previous version
+### Wariant A — proste wdrożenie
 
-```sh
-kubectl rollout undo deployment/nginx-deployment
-kubectl annotate deployment/nginx-deployment kubernetes.io/change-cause="env removed"
-kubectl rollout history deployments/nginx-deployment
+1. Wdroż i sprawdź:
+   ```bash
+   kubectl apply -f deployment.yaml
+   kubectl get all
+   ```
 
-kubectl exec -ti $(kubectl get pods -l app=myapp -o jsonpath='{.items[0].metadata.name}') -- env | grep TEST_ENV
+2. Skala:
+   ```bash
+   kubectl scale deployment/nginx-deployment --replicas=0
+   kubectl get all
+   ```
 
-kubectl rollout undo deployment/nginx-deployment --to-revision=2
-kubectl exec -ti $(kubectl get pods -l app=myapp -o jsonpath='{.items[0].metadata.name}') -- env | grep TEST_ENV
-```
+### Wariant B — rolling update z env variable
 
-# Scale deployment 
-```sh
-kubectl describe svc my-app-service
-kubectl scale deployment nginx-deployment --replicas=3
-kubectl describe svc my-app-service
-```
- - check endpoints
+1. Dodaj `env` list w `deployment.yaml` i zaaplikuj:
+   ```bash
+   kubectl apply -f deployment.yaml
+   kubectl rollout status deployment/nginx-deployment
+   ```
 
+2. Dodaj adnotację z przyczyną zmiany (widoczne w history):
+   ```bash
+   kubectl annotate deployment/nginx-deployment kubernetes.io/change-cause="env updated"
+   kubectl rollout history deployments/nginx-deployment
+   kubectl rollout history deployment/nginx-deployment --revision=1
+   kubectl rollout history deployment/nginx-deployment --revision=2
+   ```
 
-# Debug information:
-```sh
+3. Sprawdź czy env zostało propagowane:
+   ```bash
+   POD=$(kubectl get pods -l app=myapp -o jsonpath='{.items[0].metadata.name}')
+   kubectl exec -ti "$POD" -- env | grep TEST_ENV
+   ```
+
+### Wariant C — rollback
+
+1. Rollback do poprzedniej wersji:
+   ```bash
+   kubectl rollout undo deployment/nginx-deployment
+   kubectl annotate deployment/nginx-deployment kubernetes.io/change-cause="env removed"
+   kubectl rollout history deployments/nginx-deployment
+   kubectl exec -ti "$POD" -- env | grep TEST_ENV    # już nie ma
+   ```
+
+2. Rollback do konkretnej wersji:
+   ```bash
+   kubectl rollout undo deployment/nginx-deployment --to-revision=2
+   kubectl exec -ti "$POD" -- env | grep TEST_ENV    # znowu jest
+   ```
+
+### Wariant D — skalowanie + endpoints
+
+1. Skala i obserwuj Service endpoints:
+   ```bash
+   kubectl describe svc my-app-service
+   kubectl scale deployment nginx-deployment --replicas=3
+   kubectl describe svc my-app-service
+   # Więcej Pod IP w Endpoints
+   ```
+
+### Debugging
+
+```bash
 kubectl logs -l app=myapp
-kubectl exec -ti $(kubectl get pods -l app=myapp -o jsonpath='{.items[0].metadata.name}') -- cat /etc/resolv.conf
-kubectl exec -ti $(kubectl get pods -l app=myapp -o jsonpath='{.items[0].metadata.name}') -- curl my-app-service
-kubectl logs -l app=myapp
-kubectl get rs
+POD=$(kubectl get pods -l app=myapp -o jsonpath='{.items[0].metadata.name}')
+kubectl exec -ti "$POD" -- cat /etc/resolv.conf
+kubectl exec -ti "$POD" -- curl my-app-service
+kubectl get rs          # stare ReplicaSet-y dla rollback history
 ```
+
+## Pytania kontrolne
+1. `maxSurge` vs `maxUnavailable` — jak wpływają na szybkość rollout i availability?
+2. Deployment → ReplicaSet → Pod — po co 3 warstwy? Czemu nie Deployment → Pod?
+3. Ile rollout history zachować w produkcji? (Hint: `revisionHistoryLimit`)
+4. `kubectl apply` vs `kubectl rollout restart` — co robi każde?
+
+## Wyzwanie (task) — Python+Redis na K8s
+
+Zbudować pełną aplikację Python+Redis z poprzednich ćwiczeń:
+
+1. Deployment YAML dla `redis:alpine`
+2. Deployment YAML dla `krajewskim/python-api:new`
+3. Service dla redis z ClusterIP type (nie nazywaj go `redis`!)
+4. Service dla python typu NodePort (nazwa: `python-service`)
+5. Env `LOG_LEVEL=DEBUG` dla python
+6. Env `REDIS_HOST` wskazujący na redis Service
+7. Porty: REDIS=6379, PYTHON-API=5002
+8. Właściwe labele
+
+```bash
+kubectl apply -f .
+curl <ip>:<port>/api/v1/info
+curl -XPOST <ip>:<port>/api/v1/info
+curl <ip>:<port>/api/v1/info
+```
+
+**Extra**:
+- Python: readiness → TCP port, liveness → HTTP `/healthz`
+- Redis: readiness → TCP port, liveness → command `redis-cli ping`
+- Limit deployment history do 0
+
+## Linki
+- [Deployment docs](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
+- [Deployment strategies comparison](../../day3/05_Canary/strategies.md)

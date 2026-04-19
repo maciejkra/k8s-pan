@@ -2,6 +2,12 @@
 
 5-dniowe szkolenie Docker + Kubernetes. Materiały bazują na [maciejkra/k8s-full](https://github.com/maciejkra/k8s-full), rozszerzone o security tools, Gateway API, AI/GPU.
 
+**Komponenty:**
+- 📁 [`day1/` … `day5/`](#agenda--katalogi) — ćwiczenia praktyczne (manifesty + README + solution)
+- 🎤 [`presentation/`](./presentation/) — slajdy prowadzącego (Marp markdown → HTML/PDF/PPTX)
+- 🛠️ [`setup-cluster.sh`](./setup-cluster.sh) — bootstrap lokalnego K3d klastra
+- 📋 [`SETUP.md`](./SETUP.md) — instalacja narzędzi (kubectl, helm, k3d, trivy, cosign…)
+
 ## Quick start
 
 ```bash
