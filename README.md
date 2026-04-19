@@ -4,7 +4,7 @@
 
 **Komponenty:**
 - 📁 [`day1/` … `day5/`](#agenda--katalogi) — ćwiczenia praktyczne (manifesty + README + solution)
-- 🎤 [`presentation/`](./presentation/) — slajdy prowadzącego (Marp markdown → HTML/PDF/PPTX)
+- 🎤 [`presentation/dist/k8s-training-2026.pdf`](./presentation/dist/k8s-training-2026.pdf) — slajdy (76 stron, Marp). Build: `presentation/build.sh`
 - 🛠️ [`setup-cluster.sh`](./setup-cluster.sh) — bootstrap lokalnego K3d klastra
 - 📋 [`SETUP.md`](./SETUP.md) — instalacja narzędzi (kubectl, helm, k3d, trivy, cosign…)
 
