@@ -4,6 +4,20 @@ theme: default
 paginate: true
 header: "K8s Training 2026 — Day 4"
 footer: "Security deep dive"
+style: |
+  section {
+    font-size: 22px;
+    padding: 50px 60px;
+  }
+  section h1 { font-size: 1.8em; margin-top: 0; }
+  section h2 { font-size: 1.4em; }
+  section h3 { font-size: 1.15em; }
+  section ul, section ol { line-height: 1.5; }
+  section li { margin: 0.2em 0; }
+  section pre { font-size: 0.85em; line-height: 1.3; }
+  section code { font-size: 0.95em; }
+  section table { font-size: 0.95em; }
+  section th, section td { padding: 0.4em 0.8em; }
 ---
 
 # Dzień 4
@@ -13,16 +27,19 @@ footer: "Security deep dive"
 
 ## Plan dnia
 
+**Pod-level hardening:**
 1. **Debug Pod** — kubectl debug, ephemeral containers
-2. **Pod Security Admission (PSA)**
+2. **Pod Security Admission** + **SecurityContext**
 3. **Admission Controllers** + ValidatingAdmissionPolicy (CEL)
 4. **HashiCorp Vault**
-5. **SecurityContext** — runAsNonRoot, capabilities, seccomp
-6. **kube-bench** (CIS audit)
-7. **Trivy Operator** (in-cluster scanning)
-8. **Falco** (runtime detection)
-9. **OPA / Gatekeeper** (policy as code)
-10. **Service Mesh, Pentesty, Supply chain** (markdowny teoretyczne)
+
+**Cluster security tools:**
+5. **kube-bench** (CIS audit)
+6. **Trivy Operator** (in-cluster scanning)
+7. **Falco** (runtime detection)
+8. **OPA / Gatekeeper** (policy as code)
+
+**Teoria:** Service Mesh · Pentesty · Supply chain
 
 → Repo: `day4/`
 
@@ -188,12 +205,11 @@ eBPF-based runtime detection. Wykrywa:
 
 ---
 
-## OPA / Gatekeeper (D4/09)
+## OPA / Gatekeeper (D4/09) — ConstraintTemplate
 
-Policy as code (Rego):
+Policy as code (Rego). Najpierw definiujemy klasę policy:
 
 ```yaml
-# 1. ConstraintTemplate (klasa policy)
 kind: ConstraintTemplate
 spec:
   crd: { spec: { names: { kind: K8sRequiredLabels } } }
@@ -204,15 +220,26 @@ spec:
           count(missing) > 0
           msg := sprintf("missing labels: %v", [missing])
         }
+```
 
-# 2. Constraint (instancja)
+ConstraintTemplate generuje **nowy CRD** (`K8sRequiredLabels`) — meta-CRD pattern.
+
+---
+
+## OPA / Gatekeeper — Constraint (instancja)
+
+Z ConstraintTemplate wygenerowanego CRD tworzymy konkretną politykę:
+
+```yaml
 kind: K8sRequiredLabels
 spec:
   match: { kinds: [{ apiGroups: [""], kinds: [Pod] }] }
   parameters: { labels: ["owner"] }
 ```
 
-**Alternatywa: Kyverno** (YAML zamiast Rego, prostsza)
+Każdy Pod bez labela `owner` → admission webhook deny.
+
+**Alternatywa: Kyverno** (YAML zamiast Rego, prostsza dla większości use cases)
 
 → `day4/09_opa_gatekeeper/`
 

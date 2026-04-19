@@ -4,6 +4,20 @@ theme: default
 paginate: true
 header: "K8s Training 2026 — Day 5"
 footer: "Helm, monitoring, kubeadm, AI/GPU"
+style: |
+  section {
+    font-size: 22px;
+    padding: 50px 60px;
+  }
+  section h1 { font-size: 1.8em; margin-top: 0; }
+  section h2 { font-size: 1.4em; }
+  section h3 { font-size: 1.15em; }
+  section ul, section ol { line-height: 1.5; }
+  section li { margin: 0.2em 0; }
+  section pre { font-size: 0.85em; line-height: 1.3; }
+  section code { font-size: 0.95em; }
+  section table { font-size: 0.95em; }
+  section th, section td { padding: 0.4em 0.8em; }
 ---
 
 # Dzień 5
@@ -252,7 +266,7 @@ ResourceFlavor → ClusterQueue (quota) → LocalQueue → Workload
 
 ---
 
-## Sekcja 11 — Narzędzia developerskie
+## Sekcja 11 — Narzędzia developerskie (CLI)
 
 (Bez ćwiczeń w repo, tylko cheatsheet)
 
@@ -261,11 +275,19 @@ ResourceFlavor → ClusterQueue (quota) → LocalQueue → Workload
 | **kubectx** | szybsze switch context |
 | **kubens** | szybsze switch namespace |
 | **k9s** | terminal UI dla K8s |
+| **kube-ps1** | shell prompt z context+namespace |
+| **stern** | multi-pod log tail |
+
+---
+
+## Sekcja 11 — Narzędzia developerskie (GUI / dev)
+
+| Tool | Co robi |
+|---|---|
 | **Lens** | desktop GUI (multi-cluster) |
 | **Headlamp** | open-source alternatywa Lens |
 | **Telepresence** | local dev z proxy do remote cluster |
-| **kube-ps1** | shell prompt z context+namespace |
-| **stern** | multi-pod log tail |
+| **VS Code K8s extension** | manifesty, snippets, debug Pod |
 
 ---
 

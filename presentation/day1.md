@@ -4,6 +4,20 @@ theme: default
 paginate: true
 header: "K8s Training 2026 — Day 1"
 footer: "Docker + K8s Fundamentals"
+style: |
+  section {
+    font-size: 22px;
+    padding: 50px 60px;
+  }
+  section h1 { font-size: 1.8em; margin-top: 0; }
+  section h2 { font-size: 1.4em; }
+  section h3 { font-size: 1.15em; }
+  section ul, section ol { line-height: 1.5; }
+  section li { margin: 0.2em 0; }
+  section pre { font-size: 0.85em; line-height: 1.3; }
+  section code { font-size: 0.95em; }
+  section table { font-size: 0.95em; }
+  section th, section td { padding: 0.4em 0.8em; }
 ---
 
 # Dzień 1
