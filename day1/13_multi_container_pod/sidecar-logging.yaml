@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: multi-container
+spec:
+  containers:
+    # main app — generuje logi do pliku
+    - name: app
+      image: alpine:3.19
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          while true; do
+            echo "$(date) [app] request processed" >> /var/log/app/access.log
+            sleep 2
+          done
+      volumeMounts:
+        - name: shared-logs
+          mountPath: /var/log/app
+
+    # sidecar — czyta plik logów i wypluwa na stdout (gdzie kubectl logs widzi)
+    - name: log-shipper
+      image: alpine:3.19
+      command: ["/bin/sh", "-c"]
+      args:
+        - "tail -F /var/log/app/access.log"
+      volumeMounts:
+        - name: shared-logs
+          mountPath: /var/log/app
+
+  volumes:
+    - name: shared-logs
+      emptyDir: {}

@@ -1,35 +1,53 @@
-Do this first!
+# 04 — Tworzenie klastra Kind + pierwsze komendy kubectl
 
-# Create a K8s kluster with kind
-Please change `hostPath` in `kind.yaml` first.
+## Cel
+Postawić lokalny klaster Kubernetes (Kind), zweryfikować dostęp i poznać podstawowe komendy `kubectl` do diagnostyki klastra.
 
-for windows change `hostPath` to `/c/path/to/file`
+## Kontekst
+[Kind](https://kind.sigs.k8s.io/) (Kubernetes IN Docker) — uruchamia K8s w kontenerach Docker. Lekki, szybki, idealny do nauki i CI. Alternatywy: K3d (nasz default w `setup-cluster.sh`), Minikube, k3s natywnie.
 
-```sh
-kind create cluster --config ./kind.yaml --name workshop
-```
+`kubectl` używa pliku `~/.kube/config` (kubeconfig) — mapuje **clusters**, **users**, **contexts**. Po `kind create cluster` automatycznie dodaje nowy context i ustawia jako current.
 
+## Prereqs
+- Docker (dla Kind)
+- `kubectl` (`brew install kubectl`)
+- `kind` (`brew install kind`)
 
-```sh
-kubectl config current-context
-kubectl config get-contexts
-```
+## Zadanie
 
-info:
-```sh
-kubectl cluster-info
-```
+1. Zmień `hostPath` w `kind.yaml` (Windows: `/c/path/to/file`).
 
-Really verbose
+2. Stwórz klaster:
+   ```bash
+   kind create cluster --config ./kind.yaml --name workshop
+   ```
 
-```sh
-kubectl get pods -v=9
-```
+3. Sprawdź context i klaster:
+   ```bash
+   kubectl config current-context
+   kubectl config get-contexts
+   kubectl cluster-info
+   ```
 
-## Useful stull
+4. Verbose mode (debug API calls):
+   ```bash
+   kubectl get pods -v=9
+   ```
+   Zobaczysz pełne HTTP requesty do API serwera — przydatne przy debugowaniu auth/RBAC.
 
-Instal konfig plugin and iport configuration
-```sh
-kubectl krew install konfig
-kubectl konfig import -s <file>
-```
+5. Bonus — krew plugin manager:
+   ```bash
+   kubectl krew install konfig
+   kubectl konfig import -s <kubeconfig-file>
+   ```
+
+## Pytania kontrolne
+1. Co to jest current-context i jak go zmienić bez `kubectl config use-context`?
+2. `kubectl get pods -v=9` — w jakich sytuacjach poziom verbose 9 jest potrzebny?
+3. Kind vs Minikube vs K3d — kluczowe różnice?
+4. Co się stanie z kubeconfig gdy zrobisz `kind delete cluster`?
+
+## Linki
+- [Kind quick start](https://kind.sigs.k8s.io/docs/user/quick-start/)
+- [kubectl cheatsheet](https://kubernetes.io/docs/reference/kubectl/cheatsheet/)
+- [krew plugin manager](https://krew.sigs.k8s.io/)

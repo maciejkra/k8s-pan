@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ambassador-pod
+spec:
+  containers:
+    # main app
+    - name: app
+      image: alpine:3.19
+      command: ["sleep", "3600"]
+
+    # ambassador — Redis proxy. App rozmawia z localhost:6379, ambassador przekazuje do prawdziwego Redis (tu: lokalny)
+    - name: redis
+      image: redis:7-alpine
+      ports:
+        - containerPort: 6379
