@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body { margin: 0; padding: 0; }
+body { width: 720pt; height: 405pt; background: #FAFAFA; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 35pt 45pt 45pt 45pt; box-sizing: border-box; }
+h1 { color: #0F172A; font-size: 28pt; margin: 0 0 6pt 0; font-weight: bold; }
+.accent { width: 60pt; height: 3pt; background: #326CE5; margin-bottom: 14pt; }
+.tagline { color: #1E293B; font-size: 14pt; margin: 0 0 14pt 0; }
+.tagline b { color: #059669; }
+.row { display: flex; padding: 5pt 0; border-bottom: 1pt solid #E2E8F0; }
+.row.head { background: #1E293B; padding: 9pt 14pt; margin-bottom: 4pt; border: none; }
+.row.head p { color: #FFFFFF; font-weight: bold; font-size: 12pt; margin: 0; }
+.row p { margin: 0; font-size: 12pt; color: #1E293B; padding: 0 14pt; }
+.col-prof { width: 100pt; color: #326CE5 !important; font-weight: bold; font-family: 'Courier New', monospace; }
+.col-sm { width: 70pt; }
+.col-mem { width: 90pt; }
+.col-max { width: 90pt; text-align: center; }
+.col-use { flex: 1; color: #64748B !important; }
+.code { background: #1E1E2E; color: #CDD6F4; font-family: 'Courier New', monospace; font-size: 11pt; line-height: 1.4; padding: 10pt 16pt; border-radius: 6pt; margin: 12pt 0 0 0; }
+.code p { margin: 0; }
+.code .key { color: #89B4FA; font-weight: bold; }
+.code .num { color: #FAB387; }
+</style>
+</head>
+<body>
+<h1>MIG — Multi-Instance GPU (A100 80GB)</h1>
+<div class="accent"></div>
+<p class="tagline">Hardware partitioning — <b>jedno A100 = 1 do 7 izolowanych mini-GPU</b></p>
+<div class="row head"><p class="col-prof">Profile</p><p class="col-sm">SMs</p><p class="col-mem">Memory</p><p class="col-max">Max instances</p><p class="col-use">Use case</p></div>
+<div class="row"><p class="col-prof">1g.10gb</p><p class="col-sm">1/7</p><p class="col-mem">10 GB</p><p class="col-max">7</p><p class="col-use">inference małych modeli (BERT, ResNet)</p></div>
+<div class="row"><p class="col-prof">2g.20gb</p><p class="col-sm">2/7</p><p class="col-mem">20 GB</p><p class="col-max">3</p><p class="col-use">inference większych (Llama 7B int8)</p></div>
+<div class="row"><p class="col-prof">3g.20gb</p><p class="col-sm">3/7</p><p class="col-mem">20 GB</p><p class="col-max">2</p><p class="col-use">fine-tuning małych modeli</p></div>
+<div class="row"><p class="col-prof">4g.40gb</p><p class="col-sm">4/7</p><p class="col-mem">40 GB</p><p class="col-max">1</p><p class="col-use">fine-tuning średnich</p></div>
+<div class="row"><p class="col-prof">7g.80gb</p><p class="col-sm">7/7</p><p class="col-mem">80 GB</p><p class="col-max">1 (cały)</p><p class="col-use">training od zera, multi-node</p></div>
+<div class="code">
+  <p><span class="key">resources</span>:</p>
+  <p>  <span class="key">limits</span>:</p>
+  <p>    nvidia.com/mig-1g.5gb: <span class="num">1</span></p>
+</div>
+</body>
+</html>

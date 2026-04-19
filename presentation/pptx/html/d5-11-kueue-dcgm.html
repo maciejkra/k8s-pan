@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body { margin: 0; padding: 0; }
+body { width: 720pt; height: 405pt; background: #FAFAFA; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 35pt 45pt 45pt 45pt; box-sizing: border-box; }
+h1 { color: #0F172A; font-size: 28pt; margin: 0 0 6pt 0; font-weight: bold; }
+.accent { width: 60pt; height: 3pt; background: #326CE5; margin-bottom: 14pt; }
+.cols { display: flex; gap: 16pt; }
+.col { flex: 1; background: #FFFFFF; border: 1pt solid #E2E8F0; border-radius: 6pt; overflow: hidden; }
+.col-head { background: #1E293B; padding: 10pt 14pt; }
+.col-head p { color: #FFFFFF; font-weight: bold; font-size: 13pt; margin: 0; text-align: center; }
+.col-body { padding: 12pt 14pt; }
+h3 { color: #326CE5; font-size: 13pt; margin: 0 0 6pt 0; font-weight: bold; }
+ul { color: #1E293B; font-size: 12pt; line-height: 1.6; margin: 0 0 8pt 0; padding-left: 18pt; }
+li b { color: #0F172A; }
+.flow { color: #326CE5; font-size: 11pt; font-family: 'Courier New', monospace; margin: 0; text-align: center; padding: 6pt 0; }
+.metric { font-family: 'Courier New', monospace; font-size: 11pt; color: #326CE5; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>Kueue + DCGM — production AI</h1>
+<div class="accent"></div>
+<div class="cols">
+  <div class="col">
+    <div class="col-head"><p>Kueue — job queueing</p></div>
+    <div class="col-body">
+      <h3>Po co?</h3>
+      <ul>
+        <li>3 teamy współdzielą 16 GPU</li>
+        <li>Team A nie używa → Team B borrowuje</li>
+        <li><b>Fair sharing</b> + quota</li>
+      </ul>
+      <p class="flow">ResourceFlavor → ClusterQueue → LocalQueue → Workload</p>
+      <h3>Integracje</h3>
+      <ul>
+        <li>Job, JobSet, MPIJob, RayJob, PyTorchJob</li>
+      </ul>
+    </div>
+  </div>
+  <div class="col">
+    <div class="col-head"><p>DCGM Exporter — metryki GPU</p></div>
+    <div class="col-body">
+      <h3>Kluczowe metryki</h3>
+      <ul>
+        <li><span class="metric">DCGM_FI_DEV_GPU_UTIL</span> — % SM</li>
+        <li><span class="metric">DCGM_FI_DEV_FB_USED</span> — memory</li>
+        <li><span class="metric">DCGM_FI_DEV_GPU_TEMP</span> — alert &gt;83°C</li>
+        <li><span class="metric">DCGM_FI_PROF_PIPE_TENSOR_ACTIVE</span></li>
+        <li><span class="metric">DCGM_FI_DEV_ECC_DBE_VOL_TOTAL</span> — ECC errors</li>
+      </ul>
+      <h3>Grafana dashboard 12239</h3>
+    </div>
+  </div>
+</div>
+</body>
+</html>

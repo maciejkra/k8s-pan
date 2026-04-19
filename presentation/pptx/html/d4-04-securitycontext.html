@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body { margin: 0; padding: 0; }
+body { width: 720pt; height: 405pt; background: #FAFAFA; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 35pt 45pt 45pt 45pt; box-sizing: border-box; }
+h1 { color: #0F172A; font-size: 28pt; margin: 0 0 6pt 0; font-weight: bold; }
+.accent { width: 60pt; height: 3pt; background: #326CE5; margin-bottom: 14pt; }
+.code { background: #1E1E2E; color: #CDD6F4; font-family: 'Courier New', monospace; font-size: 12pt; line-height: 1.5; padding: 13pt 18pt; border-radius: 6pt; margin: 0 0 12pt 0; }
+.code p { margin: 0; }
+.code .key { color: #89B4FA; font-weight: bold; }
+.code .str { color: #A6E3A1; }
+.code .com { color: #6C7086; }
+.code .num { color: #FAB387; }
+.note { background: #DBEAFE; border-left: 4pt solid #326CE5; padding: 10pt 14pt; font-size: 13pt; color: #1E293B; margin: 0; }
+.note p { margin: 0; }
+.note b { color: #326CE5; }
+</style>
+</head>
+<body>
+<h1>SecurityContext — defense in depth</h1>
+<div class="accent"></div>
+<div class="code">
+  <p><span class="key">spec</span>:</p>
+  <p>  <span class="key">securityContext</span>:</p>
+  <p>    <span class="key">runAsNonRoot</span>: <span class="str">true</span></p>
+  <p>    <span class="key">runAsUser</span>: <span class="num">1000</span></p>
+  <p>    <span class="key">seccompProfile</span>: { <span class="key">type</span>: RuntimeDefault }</p>
+  <p>  <span class="key">containers</span>:</p>
+  <p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">securityContext</span>:</p>
+  <p>        <span class="key">allowPrivilegeEscalation</span>: <span class="str">false</span>   <span class="com"># no setuid escalation</span></p>
+  <p>        <span class="key">readOnlyRootFilesystem</span>: <span class="str">true</span>     <span class="com"># tmpfs dla /tmp</span></p>
+  <p>        <span class="key">capabilities</span>: { <span class="key">drop</span>: [<span class="str">"ALL"</span>] }    <span class="com"># minimum</span></p>
+</div>
+<div class="note">
+  <p><b>Defense in depth:</b> image hardening (D1) + SecurityContext (Pod-level) + PSA (namespace-level) + OPA (cluster-level)</p>
+</div>
+</body>
+</html>

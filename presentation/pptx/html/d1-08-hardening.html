@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body { margin: 0; padding: 0; }
+body {
+  width: 720pt; height: 405pt;
+  background: #FAFAFA;
+  font-family: Arial, Helvetica, sans-serif;
+  display: flex;
+  flex-direction: column;
+  padding: 40pt 50pt;
+  box-sizing: border-box;
+}
+h1 { color: #0F172A; font-size: 30pt; margin: 0 0 6pt 0; font-weight: bold; }
+.accent { width: 60pt; height: 3pt; background: #326CE5; margin-bottom: 18pt; }
+.cols { display: flex; gap: 24pt; }
+.col { flex: 1; }
+h3 { color: #0F172A; font-size: 16pt; margin: 0 0 10pt 0; font-weight: bold; }
+ul { color: #1E293B; font-size: 14pt; line-height: 1.7; margin: 0; padding-left: 20pt; }
+li b { color: #059669; }
+.note {
+  background: #DBEAFE;
+  border-left: 4pt solid #326CE5;
+  padding: 10pt 14pt;
+  margin-top: 14pt;
+  color: #1E293B;
+  font-size: 13pt;
+}
+.note b { color: #326CE5; }
+</style>
+</head>
+<body>
+<h1>Hardening obrazu — checklist</h1>
+<div class="accent"></div>
+<div class="cols">
+  <div class="col">
+    <h3>Build-time</h3>
+    <ul>
+      <li><b>✓</b> Distroless / Alpine base</li>
+      <li><b>✓</b> Pinowane wersje (nginx:1.27.0)</li>
+      <li><b>✓</b> Multi-stage build</li>
+      <li><b>✓</b> .dockerignore</li>
+      <li><b>✓</b> USER nonroot</li>
+      <li><b>✓</b> Hadolint (CI lint)</li>
+    </ul>
+  </div>
+  <div class="col">
+    <h3>Runtime / K8s</h3>
+    <ul>
+      <li><b>✓</b> readOnlyRootFilesystem</li>
+      <li><b>✓</b> capabilities: drop ALL</li>
+      <li><b>✓</b> seccomp: RuntimeDefault</li>
+      <li><b>✓</b> HEALTHCHECK</li>
+      <li><b>✓</b> Trivy scan (D1)</li>
+      <li><b>✓</b> Cosign + admission verify (D4)</li>
+    </ul>
+  </div>
+</div>
+<div class="note">
+  <p style="margin:0"><b>Defense in depth:</b> obraz musi być bezpieczny <i>nawet jeśli</i> uruchomi się bez SecurityContext klastra → szczegóły w D4/05</p>
+</div>
+</body>
+</html>

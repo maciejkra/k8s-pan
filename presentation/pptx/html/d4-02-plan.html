@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body { margin: 0; padding: 0; }
+body { width: 720pt; height: 405pt; background: #FAFAFA; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 45pt 60pt; box-sizing: border-box; }
+h1 { color: #0F172A; font-size: 32pt; margin: 0 0 6pt 0; font-weight: bold; }
+.accent { width: 60pt; height: 3pt; background: #326CE5; margin: 0 0 18pt 0; }
+.cols { display: flex; gap: 30pt; }
+.col { flex: 1; }
+h3 { color: #326CE5; font-size: 16pt; margin: 0 0 8pt 0; font-weight: bold; }
+ol { color: #1E293B; font-size: 14pt; line-height: 1.6; margin: 0; padding-left: 22pt; }
+li { margin-bottom: 3pt; }
+li b { color: #0F172A; }
+.footer { margin-top: auto; color: #94A3B8; font-size: 11pt; }
+</style>
+</head>
+<body>
+<h1>Plan dnia 4 — Security pełen stack</h1>
+<div class="accent"></div>
+<div class="cols">
+  <div class="col">
+    <h3>Pod-level hardening</h3>
+    <ol>
+      <li>Debug Pod (kubectl debug)</li>
+      <li>Pod Security Admission</li>
+      <li>Admission Controllers + CEL</li>
+      <li>HashiCorp Vault</li>
+      <li>SecurityContext</li>
+    </ol>
+  </div>
+  <div class="col">
+    <h3>Cluster security tools</h3>
+    <ol start="6">
+      <li>kube-bench (CIS audit)</li>
+      <li>Trivy Operator (in-cluster CVE)</li>
+      <li>Falco (runtime detection)</li>
+      <li>OPA / Gatekeeper</li>
+    </ol>
+    <h3 style="margin-top: 12pt;">Teoria + przegląd</h3>
+    <ol start="10">
+      <li>Service Mesh · Pentesty · Supply chain</li>
+    </ol>
+  </div>
+</div>
+<p class="footer">~ 9 ćwiczeń + 3 przeglądy · 7 bloków × 45 min</p>
+</body>
+</html>

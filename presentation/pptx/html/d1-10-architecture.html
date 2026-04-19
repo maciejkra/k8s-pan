@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body { margin: 0; padding: 0; }
+body {
+  width: 720pt; height: 405pt;
+  background: #FAFAFA;
+  font-family: Arial, Helvetica, sans-serif;
+  display: flex;
+  flex-direction: column;
+  padding: 40pt 50pt;
+  box-sizing: border-box;
+}
+h1 { color: #0F172A; font-size: 30pt; margin: 0 0 6pt 0; font-weight: bold; }
+.accent { width: 60pt; height: 3pt; background: #326CE5; margin-bottom: 20pt; }
+.diagram { display: flex; flex-direction: column; align-items: center; }
+.cp {
+  background: #1E293B; color: #FFFFFF;
+  padding: 14pt 24pt; border-radius: 8pt;
+  width: 380pt;
+}
+.cp-title { font-size: 14pt; font-weight: bold; color: #60A5FA; margin: 0 0 6pt 0; text-align: center; }
+.cp-items { font-size: 12pt; color: #CBD5E1; margin: 0; text-align: center; line-height: 1.6; font-family: 'Courier New', monospace; }
+.arrow { color: #326CE5; font-size: 22pt; margin: 4pt 0; }
+.nodes { display: flex; gap: 16pt; }
+.node {
+  background: #DBEAFE; color: #1E293B;
+  padding: 10pt 16pt; border-radius: 6pt;
+  width: 100pt;
+  border: 2pt solid #326CE5;
+}
+.node-title { font-size: 13pt; font-weight: bold; margin: 0 0 4pt 0; text-align: center; color: #326CE5; }
+.node-items { font-size: 11pt; margin: 0; text-align: center; line-height: 1.5; font-family: 'Courier New', monospace; }
+</style>
+</head>
+<body>
+<h1>Architektura Kubernetes</h1>
+<div class="accent"></div>
+<div class="diagram">
+  <div class="cp">
+    <p class="cp-title">CONTROL PLANE</p>
+    <p class="cp-items">kube-apiserver  ·  etcd<br>scheduler  ·  controller-manager</p>
+  </div>
+  <p class="arrow">▼</p>
+  <div class="nodes">
+    <div class="node">
+      <p class="node-title">Worker Node</p>
+      <p class="node-items">kubelet<br>kube-proxy<br>containerd</p>
+    </div>
+    <div class="node">
+      <p class="node-title">Worker Node</p>
+      <p class="node-items">kubelet<br>kube-proxy<br>containerd</p>
+    </div>
+    <div class="node">
+      <p class="node-title">Worker Node</p>
+      <p class="node-items">kubelet<br>kube-proxy<br>containerd</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

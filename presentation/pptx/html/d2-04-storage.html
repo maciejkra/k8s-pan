@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body { margin: 0; padding: 0; }
+body { width: 720pt; height: 405pt; background: #FAFAFA; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 35pt 45pt 45pt 45pt; box-sizing: border-box; }
+h1 { color: #0F172A; font-size: 28pt; margin: 0 0 6pt 0; font-weight: bold; }
+.accent { width: 60pt; height: 3pt; background: #326CE5; margin-bottom: 14pt; }
+.row { display: flex; padding: 8pt 0; border-bottom: 1pt solid #E2E8F0; }
+.row.head { background: #1E293B; padding: 9pt 14pt; margin-bottom: 4pt; border: none; }
+.row.head p { color: #FFFFFF; font-weight: bold; font-size: 13pt; margin: 0; }
+.row p { margin: 0; font-size: 13pt; color: #1E293B; padding: 0 14pt; }
+.col-name { width: 150pt; color: #326CE5 !important; font-weight: bold; font-family: 'Courier New', monospace; }
+.col-what { width: 280pt; }
+.col-when { flex: 1; color: #64748B !important; }
+.note { background: #DBEAFE; border-left: 4pt solid #326CE5; padding: 10pt 14pt; font-size: 12pt; color: #1E293B; margin: 12pt 0 0 0; }
+.note p { margin: 0; }
+.note b { color: #326CE5; }
+</style>
+</head>
+<body>
+<h1>Storage — od emptyDir do StorageClass</h1>
+<div class="accent"></div>
+<div class="row head"><p class="col-name">Warstwa</p><p class="col-what">Co</p><p class="col-when">Kiedy</p></div>
+<div class="row"><p class="col-name">emptyDir</p><p class="col-what">temp per Pod (RAM lub disk)</p><p class="col-when">cache, scratch</p></div>
+<div class="row"><p class="col-name">hostPath</p><p class="col-what">katalog z node</p><p class="col-when">debug, NIE produkcja</p></div>
+<div class="row"><p class="col-name">PV</p><p class="col-what">klaster-level resource</p><p class="col-when">admin pre-provisioning</p></div>
+<div class="row"><p class="col-name">PVC</p><p class="col-what">user request o storage</p><p class="col-when">użycie z Pod</p></div>
+<div class="row"><p class="col-name">StorageClass</p><p class="col-what">template dynamic provisioning</p><p class="col-when">cloud (EBS, GCE disk, …)</p></div>
+<div class="note">
+  <p><b>Reclaim Policy:</b> Retain (manual cleanup, bezpieczne) · Delete (auto, dla ephemeral) · Recycle (DEPRECATED)</p>
+</div>
+</body>
+</html>

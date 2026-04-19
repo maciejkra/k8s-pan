@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body { margin: 0; padding: 0; }
+body { width: 720pt; height: 405pt; background: #FAFAFA; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 35pt 45pt 45pt 45pt; box-sizing: border-box; }
+h1 { color: #0F172A; font-size: 28pt; margin: 0 0 6pt 0; font-weight: bold; }
+.accent { width: 60pt; height: 3pt; background: #326CE5; margin-bottom: 14pt; }
+.tagline { color: #1E293B; font-size: 14pt; margin: 0 0 12pt 0; }
+.cols { display: flex; gap: 14pt; }
+.col { flex: 1; background: #FFFFFF; border: 1pt solid #E2E8F0; border-radius: 6pt; overflow: hidden; }
+.col-head { padding: 10pt 14pt; }
+.col-head p { color: #FFFFFF; font-weight: bold; font-size: 13pt; margin: 0; text-align: center; }
+.h-ts { background: #D97706; }
+.h-mig { background: #059669; }
+.h-mps { background: #326CE5; }
+.col-body { padding: 11pt 14pt; }
+.col-body p { margin: 3pt 0; font-size: 12pt; color: #1E293B; }
+.col-body b { color: #326CE5; }
+.tag { display: inline-block; padding: 1pt 6pt; border-radius: 3pt; font-size: 10pt; font-weight: bold; }
+.tag-good { background: #DCFCE7; color: #166534; }
+.tag-bad { background: #FEE2E2; color: #991B1B; }
+</style>
+</head>
+<body>
+<h1>GPU sharing — 3 modele</h1>
+<div class="accent"></div>
+<p class="tagline">W produkcji <b>jedno GPU może być współdzielone</b> między wieloma workloadami. Trzy mechanizmy:</p>
+<div class="cols">
+  <div class="col">
+    <div class="col-head h-ts"><p>1. Time-slicing</p></div>
+    <div class="col-body">
+      <p><b>Software multiplexing</b></p>
+      <p>1 fizyczne GPU = N wirtualnych</p>
+      <p>1/N czasu kompute</p>
+      <p>Wspólna pamięć (walka)</p>
+      <p><span class="tag tag-good">działa wszędzie</span></p>
+      <p><span class="tag tag-bad">brak izolacji</span></p>
+    </div>
+  </div>
+  <div class="col">
+    <div class="col-head h-mig"><p>2. MIG (hardware)</p></div>
+    <div class="col-body">
+      <p><b>Hardware partitioning</b></p>
+      <p>Tylko A100 / A30 / H100</p>
+      <p>Dedicated SMs + memory</p>
+      <p>1g.5gb, 3g.20gb, 7g.80gb</p>
+      <p><span class="tag tag-good">izolacja, predictable</span></p>
+      <p><span class="tag tag-bad">tylko Ampere/Hopper</span></p>
+    </div>
+  </div>
+  <div class="col">
+    <div class="col-head h-mps"><p>3. MPS (NVIDIA)</p></div>
+    <div class="col-body">
+      <p><b>Multi-Process Service</b></p>
+      <p>CUDA processes share context</p>
+      <p>Mniej overhead niż time-slicing</p>
+      <p>Wymaga MPS daemon na node</p>
+      <p><span class="tag tag-good">CUDA-optimized</span></p>
+      <p><span class="tag tag-bad">CUDA only</span></p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

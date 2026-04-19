@@ -5,7 +5,7 @@
 **Komponenty:**
 - 📋 [`AGENDA.md`](./AGENDA.md) — agenda szczegółowa: 5 dni × 7 bloków × 45 min, z godzinami i lab per blok
 - 📁 [`day1/` … `day5/`](#agenda--katalogi) — ćwiczenia praktyczne (manifesty + README + solution)
-- 🎤 [`presentation/dist/k8s-training-2026.pdf`](./presentation/dist/k8s-training-2026.pdf) — slajdy. Build: `presentation/build.sh`
+- 🎤 [`presentation/pptx/dist/k8s-training-2026.pptx`](./presentation/pptx/dist/k8s-training-2026.pptx) — slajdy KubeCon-style (65 slajdów, PowerPoint). Build: `presentation/pptx/build.js`
 - 🛠️ [`setup-cluster.sh`](./setup-cluster.sh) — bootstrap lokalnego K3d klastra
 - 📋 [`SETUP.md`](./SETUP.md) — instalacja narzędzi (kubectl, helm, k3d, trivy, cosign…)
 

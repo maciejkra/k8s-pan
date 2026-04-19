@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body { margin: 0; padding: 0; }
+body { width: 720pt; height: 405pt; background: #FAFAFA; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 40pt 50pt; box-sizing: border-box; }
+h1 { color: #0F172A; font-size: 30pt; margin: 0 0 6pt 0; font-weight: bold; }
+.accent { width: 60pt; height: 3pt; background: #326CE5; margin-bottom: 18pt; }
+ul { color: #1E293B; font-size: 16pt; line-height: 1.7; margin: 0 0 12pt 0; padding-left: 24pt; list-style: none; }
+li { margin-bottom: 4pt; }
+li::before { content: "✓"; color: #059669; font-weight: bold; margin-right: 10pt; }
+li b { color: #0F172A; }
+.next { background: #FEF3C7; border-left: 4pt solid #D97706; padding: 11pt 14pt; color: #1E293B; font-size: 12pt; margin: 0; }
+.next p { margin: 0; }
+.next b { color: #D97706; }
+</style>
+</head>
+<body>
+<h1>Podsumowanie Dnia 4</h1>
+<div class="accent"></div>
+<ul>
+  <li><b>PSA + SecurityContext</b> — Pod-level hardening</li>
+  <li><b>Vault</b> — production secrets (CSI, env, agent)</li>
+  <li><b>kube-bench</b> — CIS audit klastra</li>
+  <li><b>Trivy Operator</b> — runtime CVE scan + Grafana dashboard</li>
+  <li><b>Falco</b> — runtime detection (eBPF) + Falcosidekick</li>
+  <li><b>OPA/Gatekeeper</b> — policy as code (Rego)</li>
+  <li><b>Service Mesh · Pentesty · Supply Chain</b> — przegląd + frameworki</li>
+</ul>
+<div class="next">
+  <p><b>Jutro (D5):</b> Helm charts (install + own) · Prometheus + Grafana + Loki · kubeadm walkthrough · AI/GPU na K8s (fake-gpu-operator + MIG + time-slicing) · Kueue + DCGM + production practices · narzędzia developerskie</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body { margin: 0; padding: 0; }
+body { width: 720pt; height: 405pt; background: #FAFAFA; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 35pt 45pt 45pt 45pt; box-sizing: border-box; }
+h1 { color: #0F172A; font-size: 28pt; margin: 0 0 6pt 0; font-weight: bold; }
+.accent { width: 60pt; height: 3pt; background: #326CE5; margin-bottom: 16pt; }
+.code { background: #1E1E2E; color: #CDD6F4; font-family: 'Courier New', monospace; font-size: 11pt; line-height: 1.45; padding: 11pt 16pt; border-radius: 6pt; margin: 0 0 9pt 0; }
+.code p { margin: 0; }
+.code .key { color: #89B4FA; font-weight: bold; }
+.code .com { color: #6C7086; }
+.code .str { color: #A6E3A1; }
+.flow { color: #326CE5; font-size: 13pt; margin: 0 0 10pt 0; text-align: center; font-weight: bold; }
+.note { background: #DBEAFE; border-left: 4pt solid #326CE5; padding: 9pt 14pt; font-size: 12pt; color: #1E293B; margin: 0; }
+.note p { margin: 0; }
+.note b { color: #326CE5; }
+</style>
+</head>
+<body>
+<h1>Node maintenance — drain + PDB</h1>
+<div class="accent"></div>
+<p class="flow">cordon → drain → patch / reboot → uncordon</p>
+<div class="code">
+  <p><span class="key">$</span> kubectl cordon $NODE                     <span class="com"># nie planuj nowych</span></p>
+  <p><span class="key">$</span> kubectl drain $NODE \</p>
+  <p>    --ignore-daemonsets \                       <span class="com"># DaemonSet zostaje</span></p>
+  <p>    --delete-emptydir-data                       <span class="com"># temp data</span></p>
+  <p><span class="com"># patch / reboot / replace</span></p>
+  <p><span class="key">$</span> kubectl uncordon $NODE</p>
+</div>
+<div class="code">
+  <p><span class="key">apiVersion</span>: policy/v1</p>
+  <p><span class="key">kind</span>: PodDisruptionBudget</p>
+  <p><span class="key">spec</span>:</p>
+  <p>  <span class="key">minAvailable</span>: <span class="str">"75%"</span>      <span class="com"># lub maxUnavailable: 1</span></p>
+  <p>  <span class="key">selector</span>: { <span class="key">matchLabels</span>: { app: critical } }</p>
+</div>
+<div class="note">
+  <p><b>drain respektuje PDB</b> — czeka aż ewikcja nie naruszy budżetu. Zero downtime przy patchowaniu floty.</p>
+</div>
+</body>
+</html>

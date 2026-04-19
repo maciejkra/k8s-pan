@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body { margin: 0; padding: 0; }
+body { width: 720pt; height: 405pt; background: #FAFAFA; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 35pt 45pt 45pt 45pt; box-sizing: border-box; }
+h1 { color: #0F172A; font-size: 28pt; margin: 0 0 6pt 0; font-weight: bold; }
+.accent { width: 60pt; height: 3pt; background: #326CE5; margin-bottom: 14pt; }
+.row { display: flex; padding: 8pt 0; border-bottom: 1pt solid #E2E8F0; }
+.row.head { background: #1E293B; padding: 9pt 14pt; margin-bottom: 4pt; border: none; }
+.row.head p { color: #FFFFFF; font-weight: bold; font-size: 13pt; margin: 0; }
+.row p { margin: 0; font-size: 13pt; color: #1E293B; padding: 0 14pt; }
+.col-name { width: 130pt; font-weight: bold; color: #326CE5 !important; }
+.col-down { width: 100pt; }
+.col-res { width: 100pt; }
+.col-back { flex: 1; color: #64748B !important; }
+.tak { color: #DC2626 !important; font-weight: bold; }
+.nie { color: #059669 !important; font-weight: bold; }
+.note { background: #DBEAFE; border-left: 4pt solid #326CE5; padding: 9pt 14pt; font-size: 12pt; color: #1E293B; margin: 12pt 0 0 0; }
+.note p { margin: 0; }
+.note b { color: #326CE5; }
+</style>
+</head>
+<body>
+<h1>Strategie wdrożeń — 6 wariantów</h1>
+<div class="accent"></div>
+<div class="row head"><p class="col-name">Strategia</p><p class="col-down">Downtime</p><p class="col-res">Resource</p><p class="col-back">Rollback</p></div>
+<div class="row"><p class="col-name">Recreate</p><p class="col-down tak">TAK</p><p class="col-res">1×</p><p class="col-back">trudny</p></div>
+<div class="row"><p class="col-name">Rolling</p><p class="col-down nie">NIE</p><p class="col-res">1.25×</p><p class="col-back">wolny</p></div>
+<div class="row"><p class="col-name">Blue/Green</p><p class="col-down nie">NIE</p><p class="col-res">2×</p><p class="col-back">natychmiastowy</p></div>
+<div class="row"><p class="col-name">Canary</p><p class="col-down nie">NIE</p><p class="col-res">1.x×</p><p class="col-back">natychmiastowy + auto na metryk</p></div>
+<div class="row"><p class="col-name">A/B</p><p class="col-down nie">NIE</p><p class="col-res">2×</p><p class="col-back">per cohort (cookie)</p></div>
+<div class="row"><p class="col-name">Shadow</p><p class="col-down nie">NIE</p><p class="col-res">2×</p><p class="col-back">n/a (read-only)</p></div>
+<div class="note">
+  <p><b>Argo Rollouts</b> = automated Canary z metryk Prometheus + auto-rollback. <b>Flagger</b> = analogicznie z service mesh.</p>
+</div>
+</body>
+</html>

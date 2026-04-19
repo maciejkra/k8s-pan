@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body { margin: 0; padding: 0; }
+body {
+  width: 720pt; height: 405pt;
+  background: #FAFAFA;
+  font-family: Arial, Helvetica, sans-serif;
+  display: flex;
+  flex-direction: column;
+  padding: 35pt 45pt 45pt 45pt;
+  box-sizing: border-box;
+}
+h1 { color: #0F172A; font-size: 30pt; margin: 0 0 6pt 0; font-weight: bold; }
+.accent { width: 60pt; height: 3pt; background: #326CE5; margin-bottom: 14pt; }
+.row { display: flex; padding: 9pt 0; border-bottom: 1pt solid #E2E8F0; }
+.row.head { background: #1E293B; padding: 10pt 14pt; margin-bottom: 4pt; border: none; }
+.row.head p { color: #FFFFFF; font-weight: bold; font-size: 13pt; margin: 0; }
+.row p { margin: 0; font-size: 13pt; color: #1E293B; padding: 0 14pt; }
+.col-type { width: 130pt; color: #326CE5 !important; font-weight: bold; font-family: 'Courier New', monospace; }
+.col-what { width: 280pt; }
+.col-when { flex: 1; color: #64748B !important; }
+.note {
+  background: #DBEAFE;
+  border-left: 4pt solid #326CE5;
+  padding: 11pt 14pt;
+  font-size: 12pt;
+  color: #1E293B;
+  margin: 12pt 0 0 0;
+}
+.note p { margin: 0; }
+.note .lab { color: #326CE5; font-weight: bold; }
+.note .mono { font-family: 'Courier New', monospace; background: #FFFFFF; padding: 1pt 5pt; border-radius: 3pt; font-size: 11pt; }
+</style>
+</head>
+<body>
+<h1>Service + DNS w klastrze</h1>
+<div class="accent"></div>
+<div class="row head">
+  <p class="col-type">Type</p>
+  <p class="col-what">Co</p>
+  <p class="col-when">Kiedy</p>
+</div>
+<div class="row">
+  <p class="col-type">ClusterIP</p>
+  <p class="col-what">tylko wewnątrz klastra</p>
+  <p class="col-when">internal microservices (default)</p>
+</div>
+<div class="row">
+  <p class="col-type">NodePort</p>
+  <p class="col-what">port na każdym node (30000–32767)</p>
+  <p class="col-when">quick test, dev</p>
+</div>
+<div class="row">
+  <p class="col-type">LoadBalancer</p>
+  <p class="col-what">external LB (cloud / MetalLB)</p>
+  <p class="col-when">produkcja, public-facing</p>
+</div>
+<div class="row">
+  <p class="col-type">ExternalName</p>
+  <p class="col-what">DNS alias do external service</p>
+  <p class="col-when">legacy DB poza klastrem</p>
+</div>
+<div class="note">
+  <p><span class="lab">DNS w klastrze:</span> <span class="mono">service-name.namespace.svc.cluster.local</span> — CoreDNS automatycznie. Pod widzi search domain → wystarczy <span class="mono">service-name</span></p>
+</div>
+</body>
+</html>

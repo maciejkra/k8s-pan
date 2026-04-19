@@ -1,71 +1,86 @@
 # Prezentacja: Docker + Kubernetes 5-day training (2026)
 
-Slajdy w formacie [Marp](https://marp.app/) — markdown ze sterowaniem prezentacji przez `<!-- ... -->`.
+Prezentacja w stylu **jsystems** — KubeCon design, generowana z HTML przez `html2pptx`.
 
 ## Output
 
-📄 **`dist/k8s-training-2026.pdf`** — jeden plik PDF (76 stron, ~1.8 MB) zawierający wszystkie 5 dni szkolenia.
+📄 **`pptx/dist/k8s-training-2026.pptx`** — jeden PPTX (65 slajdów, 5 dni). Edytowalny w PowerPoint / Keynote / LibreOffice.
 
-## Struktura źródeł
+## Struktura
 
-| Plik | Slajdy | Zakres agendy |
-|---|---|---|
-| `day1.md` | 14 | Docker hardening + K8s podstawy |
-| `day2.md` | 14 | Workloady, AuthN/AuthZ, Gateway API |
-| `day3.md` | 14 | Scheduling, autoscaling, deployment strategies |
-| `day4.md` | 16 | Security pełen stack |
-| `day5.md` | 18 | Helm, monitoring, kubeadm, AI/GPU |
-
-Każdy plik ma **swój własny header/footer** i **paginację 1-N** zachowane w finalnym PDF — naturalna nawigacja "Day 3, slajd 7" dla prowadzącego.
+```
+pptx/
+├── build.js                  # Node.js script — html2pptx workflow
+├── html/                     # 65 plików HTML, jeden per slajd
+│   ├── d1-01-cover.html      ← 16 slajdów Day 1
+│   ├── d2-01-cover.html      ← 12 slajdów Day 2
+│   ├── d3-01-cover.html      ← 10 slajdów Day 3
+│   ├── d4-01-cover.html      ← 13 slajdów Day 4
+│   ├── d5-01-cover.html      ← 14 slajdów Day 5
+│   └── *.png                 # logo Docker, K8s, Helm, Cosign
+└── dist/
+    ├── k8s-training-2026.pptx
+    └── preview-*.jpg          # thumbnails do quick review
+```
 
 ## Build
 
 ### Wymagania
-- `npx` (Node.js)
-- `pdfunite` (poppler-utils): `brew install poppler` na macOS
+- Node.js + npm
+- Globalne pakiety: `pptxgenjs`, `playwright`, `sharp`
 
-### Wygeneruj jeden plik PDF
-
-```bash
-./build.sh
-# OK: dist/k8s-training-2026.pdf (1,8M, 76 stron)
-```
-
-Skrypt:
-1. Renderuje 5 tymczasowych PDF (per dzień) przez Marp CLI
-2. Scala je w `dist/k8s-training-2026.pdf` przez `pdfunite`
-3. Czyści katalog `tmp/`
-
-### Live preview (podczas edycji)
-
-VS Code: zainstaluj [Marp for VS Code](https://marketplace.visualstudio.com/items?itemName=marp-team.marp-vscode), otwórz dowolny `dayN.md` — preview po prawej z hot reload.
-
-### Inne formaty (opcjonalnie)
+### Wygeneruj PPTX
 
 ```bash
-# HTML jednego dnia (np. do projektora przez przeglądarkę)
-npx --yes @marp-team/marp-cli@latest day1.md --html --output dist/day1.html
-
-# PPTX
-npx --yes @marp-team/marp-cli@latest day1.md --pptx --output dist/day1.pptx
+cd pptx
+NODE_PATH=$(npm root -g) node build.js
 ```
 
-### Tryb prezentera (speaker view)
+### Generowanie thumbnails
 
-W przeglądarce z renderowanym HTML naciśnij `P` — otwiera się drugie okno z notatkami i podglądem następnego slajdu.
+```bash
+SKILL_DIR=/Users/jamicque/.claude/plugins/cache/anthropic-agent-skills/document-skills/69c0b1a06741/skills/pptx
+python3 $SKILL_DIR/scripts/thumbnail.py dist/k8s-training-2026.pptx dist/preview --cols 5
+```
 
-## Konwencje
+### Eksport PDF
 
-- **Tytuł sekcji** = duży nagłówek + ikona dnia (D1/D2/.../D5)
-- **Code blocks** = monospace, syntax highlighting (Marp default theme)
-- **Cross-link** do ćwiczeń jako: `→ day1/02_secure_image/`
-- **Speaker notes** (HTML comments): `<!-- to widzi tylko prowadzący -->`
-- **Style**: każdy `dayN.md` ma w frontmatter `style:` z custom CSS — zmniejszony font + spacing tak żeby wszystkie slajdy mieściły się na jednej stronie
+```bash
+soffice --headless --convert-to pdf dist/k8s-training-2026.pptx --outdir dist/
+```
 
-## Customize
+## Style — KubeCon / jsystems
 
-**Theme**: edytuj `theme: default` w frontmatter każdego `dayN.md` na `gaia` lub `uncover` (built-in Marp themes), lub dodaj własny CSS w `style.css` i `theme: ./style.css`.
+- **Cover (D1-D5)**: ciemne tło `#0F172A` + JSYSTEMS branding + niebieska linia akcent `#326CE5` + duży tytuł + prawy panel `#1E293B` z logiem (Docker, K8s, Helm, Cosign)
+- **Content**: jasne tło `#FAFAFA` + nagłówek z niebieską linią pod
+- **Comparison**: czerwony `#DC2626` vs zielony `#059669` headers (np. bad/good Dockerfile)
+- **Section divider**: jasne tło + duży emoji + gigantyczny tytuł
+- **Code**: ciemne `#1E1E2E` + Catppuccin colors
+- **Tables**: nagłówek `#1E293B` biały, niebieska kolumna typu `#326CE5`
+- **Notes**: niebieskie (info), żółte (warning), czerwone (danger)
+- **Font**: Arial (web-safe, podobna do Inter z jsystems)
 
-**Logo firmy**: dodaj `![bg right:30%](logo.png)` na pierwszym slajdzie każdego dnia.
+## Edycja
 
-**Header/Footer**: edytuj `header:` i `footer:` w frontmatter `dayN.md`.
+```bash
+# Edytuj treść slajdu
+code html/d1-04-bad-dockerfile.html
+
+# Re-build
+NODE_PATH=$(npm root -g) node build.js
+
+# Otwórz PPTX
+open dist/k8s-training-2026.pptx
+```
+
+## Restrykcje html2pptx
+
+❌ Nie wspiera: `<table>` (użyj `<div class="row">` z flex), CSS gradients (rasteryzuj przez Sharp), `margin` na `<span>`, bullet chars w `<p>` (użyj `<ul>` lub `&nbsp;`)
+
+✅ Wspiera: `<p>`, `<h*>`, `<ul>`, `<ol>`, `<b>/<i>/<u>`, `<span>` z color/bold, `<div>` z bg/border/shadow, `<img>`, Flexbox
+
+## Statystyki
+
+- **65 slajdów** (D1: 16, D2: 12, D3: 10, D4: 13, D5: 14)
+- **~3 MB PPTX** + thumbnails ~600 KB
+- Build time **~1 min**

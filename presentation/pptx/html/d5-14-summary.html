@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body { margin: 0; padding: 0; }
+body { width: 720pt; height: 405pt; background: #FAFAFA; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 35pt 45pt 45pt 45pt; box-sizing: border-box; }
+h1 { color: #0F172A; font-size: 30pt; margin: 0 0 6pt 0; font-weight: bold; }
+.accent { width: 60pt; height: 3pt; background: #326CE5; margin-bottom: 16pt; }
+ul { color: #1E293B; font-size: 15pt; line-height: 1.7; margin: 0 0 14pt 0; padding-left: 24pt; list-style: none; }
+li { margin-bottom: 3pt; }
+li::before { content: "✓"; color: #059669; font-weight: bold; margin-right: 10pt; }
+li b { color: #0F172A; }
+.row { display: flex; padding: 7pt 0; border-bottom: 1pt solid #E2E8F0; }
+.row p { margin: 0; font-size: 13pt; color: #1E293B; }
+.row.head { background: #1E293B; padding: 8pt 14pt; margin-bottom: 4pt; border: none; }
+.row.head p { color: #FFFFFF; font-weight: bold; }
+.col-d { width: 70pt; color: #326CE5 !important; font-weight: bold; padding-left: 14pt; }
+.col-t { flex: 1; padding-right: 14pt; }
+.thanks { color: #326CE5; font-size: 22pt; font-weight: bold; text-align: center; margin: 14pt 0 0 0; }
+</style>
+</head>
+<body>
+<h1>Podsumowanie 5-dniowego kursu</h1>
+<div class="accent"></div>
+<div class="row head"><p class="col-d">Dzień</p><p class="col-t">Tematy główne</p></div>
+<div class="row"><p class="col-d">D1</p><p class="col-t">Docker (bad Dockerfile + multi-stage) + K8s podstawy (Pod, Service, Probes, Deployment)</p></div>
+<div class="row"><p class="col-d">D2</p><p class="col-t">Workloady, Storage, ConfigMap+Secrets, AuthN/AuthZ, <b>Gateway API</b></p></div>
+<div class="row"><p class="col-d">D3</p><p class="col-t">QoS, HPA, 6 strategii wdrożeń, scheduling, NetworkPolicy, drain+PDB</p></div>
+<div class="row"><p class="col-d">D4</p><p class="col-t">Security pełen stack: PSA, Vault, kube-bench, Trivy Op, Falco, OPA</p></div>
+<div class="row"><p class="col-d">D5</p><p class="col-t">Helm, Prometheus+Loki, kubeadm, <b>AI/GPU</b> (fake-gpu, MIG, time-slicing)</p></div>
+<p class="thanks">Dziękuję! 🎉</p>
+</body>
+</html>

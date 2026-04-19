@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body { margin: 0; padding: 0; }
+body { width: 720pt; height: 405pt; background: #FAFAFA; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 35pt 45pt 45pt 45pt; box-sizing: border-box; }
+h1 { color: #0F172A; font-size: 28pt; margin: 0 0 6pt 0; font-weight: bold; }
+.accent { width: 60pt; height: 3pt; background: #326CE5; margin-bottom: 16pt; }
+.diagram { display: flex; flex-direction: column; align-items: center; gap: 4pt; }
+.box { padding: 7pt 18pt; border-radius: 5pt; min-width: 320pt; text-align: center; }
+.box p { margin: 0; color: #FFFFFF; font-size: 13pt; font-weight: bold; }
+.box .desc { color: #CBD5E1; font-size: 10pt; font-weight: normal; margin-top: 2pt; }
+.b1 { background: #DC2626; }
+.b2 { background: #326CE5; }
+.b3 { background: #1E293B; }
+.b4 { background: #059669; }
+.arrow { color: #326CE5; font-size: 16pt; font-weight: bold; }
+.note { background: #FEF3C7; border-left: 4pt solid #D97706; padding: 8pt 12pt; font-size: 11pt; color: #1E293B; margin: 8pt 0 0 0; }
+.note p { margin: 0; }
+.note b { color: #D97706; }
+</style>
+</head>
+<body>
+<h1>GPU stack na K8s — 4 warstwy</h1>
+<div class="accent"></div>
+<div class="diagram">
+  <div class="box b1"><p>Pod: nvidia.com/gpu: 1</p><p class="desc">aplikacja prosi o GPU jako resource limit</p></div>
+  <span class="arrow">▼</span>
+  <div class="box b2"><p>K8s scheduler</p><p class="desc">respektuje extended resources, nodeSelector, taints</p></div>
+  <span class="arrow">▼</span>
+  <div class="box b3"><p>NVIDIA Device Plugin (DaemonSet)</p><p class="desc">gRPC do kubelet, raportuje liczbę GPU per node</p></div>
+  <span class="arrow">▼</span>
+  <div class="box b4"><p>NVIDIA GPU Operator</p><p class="desc">orkiestracja: Driver + Toolkit + DCGM + MIG manager + GFD</p></div>
+</div>
+<div class="note">
+  <p><b>D5/04:</b> używamy fake-gpu-operator (Run:AI) — emulacja całego stosu na CPU-only K3d klastrze. Ćwiczenia działają, scheduling i logika OK.</p>
+</div>
+</body>
+</html>

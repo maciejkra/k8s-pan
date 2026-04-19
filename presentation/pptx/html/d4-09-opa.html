@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body { margin: 0; padding: 0; }
+body { width: 720pt; height: 405pt; background: #FAFAFA; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 35pt 45pt 45pt 45pt; box-sizing: border-box; }
+h1 { color: #0F172A; font-size: 28pt; margin: 0 0 6pt 0; font-weight: bold; }
+.accent { width: 60pt; height: 3pt; background: #326CE5; margin-bottom: 14pt; }
+.tagline { color: #1E293B; font-size: 15pt; margin: 0 0 12pt 0; }
+.tagline b { color: #326CE5; }
+.code { background: #1E1E2E; color: #CDD6F4; font-family: 'Courier New', monospace; font-size: 11pt; line-height: 1.45; padding: 11pt 16pt; border-radius: 6pt; margin: 0 0 10pt 0; }
+.code p { margin: 0; }
+.code .key { color: #89B4FA; font-weight: bold; }
+.code .str { color: #A6E3A1; }
+.code .com { color: #6C7086; }
+.note { background: #DBEAFE; border-left: 4pt solid #326CE5; padding: 9pt 14pt; font-size: 12pt; color: #1E293B; margin: 0; }
+.note p { margin: 0; }
+.note b { color: #326CE5; }
+</style>
+</head>
+<body>
+<h1>OPA / Gatekeeper — policy as code</h1>
+<div class="accent"></div>
+<p class="tagline">Admission webhook + <b>Rego policy</b>. Wymusza policies w runtime — nie ufa dyscyplinie devów.</p>
+<div class="code">
+  <p><span class="com"># 1. ConstraintTemplate (klasa policy → generuje nowy CRD)</span></p>
+  <p><span class="key">kind</span>: ConstraintTemplate</p>
+  <p><span class="key">spec</span>: { <span class="key">crd</span>: { <span class="key">spec</span>: { <span class="key">names</span>: { <span class="key">kind</span>: K8sRequiredLabels } } } }</p>
+  <p>&nbsp;&nbsp;<span class="key">targets</span>: [{ <span class="key">rego</span>: <span class="str">"violation[...] { missing = required - provided; ... }"</span> }]</p>
+  <p>&nbsp;</p>
+  <p><span class="com"># 2. Constraint (instancja — Pod musi mieć label 'owner')</span></p>
+  <p><span class="key">kind</span>: K8sRequiredLabels</p>
+  <p><span class="key">spec</span>:</p>
+  <p>  <span class="key">match</span>: { <span class="key">kinds</span>: [{ <span class="key">apiGroups</span>: [<span class="str">""</span>], <span class="key">kinds</span>: [Pod] }] }</p>
+  <p>  <span class="key">parameters</span>: { <span class="key">labels</span>: [<span class="str">"owner"</span>] }</p>
+</div>
+<div class="note">
+  <p><b>Alternatywa Kyverno</b> — YAML zamiast Rego, prostsze. Native dla K8s, popularniejsze w nowych klastrach.</p>
+</div>
+</body>
+</html>

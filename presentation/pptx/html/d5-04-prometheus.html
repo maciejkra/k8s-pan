@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body { margin: 0; padding: 0; }
+body { width: 720pt; height: 405pt; background: #FAFAFA; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 35pt 45pt 45pt 45pt; box-sizing: border-box; }
+h1 { color: #0F172A; font-size: 28pt; margin: 0 0 6pt 0; font-weight: bold; }
+.accent { width: 60pt; height: 3pt; background: #326CE5; margin-bottom: 14pt; }
+.tagline { color: #1E293B; font-size: 15pt; margin: 0 0 14pt 0; }
+.tagline b { color: #326CE5; }
+.cols { display: flex; gap: 14pt; }
+.col { flex: 1; background: #FFFFFF; border: 1pt solid #E2E8F0; border-radius: 6pt; padding: 12pt 14pt; }
+h3 { color: #326CE5; font-size: 14pt; margin: 0 0 8pt 0; font-weight: bold; }
+ul { color: #1E293B; font-size: 12pt; line-height: 1.6; margin: 0; padding-left: 18pt; }
+li b { color: #0F172A; }
+.code { background: #1E1E2E; color: #CDD6F4; font-family: 'Courier New', monospace; font-size: 11pt; line-height: 1.4; padding: 10pt 16pt; border-radius: 6pt; margin: 12pt 0 0 0; }
+.code p { margin: 0; }
+.code .key { color: #89B4FA; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>kube-prometheus-stack</h1>
+<div class="accent"></div>
+<p class="tagline"><b>Wszystko w jednym Helm chart:</b> Prometheus Operator + Grafana + AlertManager + node-exporter + kube-state-metrics</p>
+<div class="cols">
+  <div class="col">
+    <h3>Prometheus Operator</h3>
+    <ul>
+      <li><b>CRD-y:</b> ServiceMonitor</li>
+      <li>PrometheusRule</li>
+      <li>AlertmanagerConfig</li>
+      <li>PodMonitor, Probe</li>
+    </ul>
+  </div>
+  <div class="col">
+    <h3>Grafana</h3>
+    <ul>
+      <li>Preinstall'd dashboards</li>
+      <li>K8s cluster, node, pod</li>
+      <li>17813 Trivy reports</li>
+      <li>12239 DCGM (GPU)</li>
+    </ul>
+  </div>
+  <div class="col">
+    <h3>Loki (logs)</h3>
+    <ul>
+      <li>Promtail / Fluent Bit</li>
+      <li>LogQL (jak PromQL)</li>
+      <li>Chunks compression</li>
+      <li>Cheap object storage (S3)</li>
+    </ul>
+  </div>
+</div>
+<div class="code">
+  <p><span class="key">$</span> helm install monitoring prometheus-community/kube-prometheus-stack -n monitoring</p>
+  <p><span class="key">$</span> helm install loki grafana/loki-stack -n loki</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body { margin: 0; padding: 0; }
+body { width: 720pt; height: 405pt; background: #FAFAFA; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 35pt 45pt 45pt 45pt; box-sizing: border-box; }
+h1 { color: #0F172A; font-size: 28pt; margin: 0 0 6pt 0; font-weight: bold; }
+.accent { width: 60pt; height: 3pt; background: #326CE5; margin-bottom: 18pt; }
+.flow { display: flex; align-items: center; justify-content: center; gap: 6pt; margin-bottom: 18pt; }
+.box { background: #1E293B; padding: 14pt 18pt; border-radius: 6pt; }
+.box.start { background: #326CE5; }
+.box.end { background: #059669; }
+.box p { color: #FFFFFF; font-size: 13pt; font-weight: bold; margin: 0; }
+.arrow { color: #326CE5; font-size: 20pt; font-weight: bold; }
+.cols { display: flex; gap: 24pt; }
+.col { flex: 1; }
+h3 { color: #326CE5; font-size: 16pt; margin: 0 0 8pt 0; font-weight: bold; }
+ul { color: #1E293B; font-size: 13pt; line-height: 1.7; margin: 0; padding-left: 20pt; }
+li b { color: #0F172A; }
+</style>
+</head>
+<body>
+<h1>AuthN / AuthZ — flow</h1>
+<div class="accent"></div>
+<div class="flow">
+  <div class="box start"><p>Request</p></div>
+  <span class="arrow">→</span>
+  <div class="box"><p>AuthN</p></div>
+  <span class="arrow">→</span>
+  <div class="box"><p>AuthZ</p></div>
+  <span class="arrow">→</span>
+  <div class="box"><p>Admission</p></div>
+  <span class="arrow">→</span>
+  <div class="box end"><p>etcd</p></div>
+</div>
+<div class="cols">
+  <div class="col">
+    <h3>AuthN: kim jesteś?</h3>
+    <ul>
+      <li><b>ServiceAccount Token</b> — in-cluster Pod</li>
+      <li><b>x509 Client Cert</b> — admin emergency</li>
+      <li><b>OIDC</b> — human user (SSO)</li>
+      <li><b>Webhook</b> — custom IDP</li>
+    </ul>
+  </div>
+  <div class="col">
+    <h3>AuthZ: co możesz?</h3>
+    <ul>
+      <li><b>RBAC</b> (najpopularniejsze) — Role + Binding</li>
+      <li><b>ABAC</b> (legacy)</li>
+      <li><b>Webhook</b> — custom (np. OPA)</li>
+      <li><b>Node</b> — special dla kubelet</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

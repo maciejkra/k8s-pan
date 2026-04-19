@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body { margin: 0; padding: 0; }
+body { width: 720pt; height: 405pt; background: #FAFAFA; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; padding: 35pt 45pt 45pt 45pt; box-sizing: border-box; }
+h1 { color: #0F172A; font-size: 28pt; margin: 0 0 6pt 0; font-weight: bold; }
+.accent { width: 60pt; height: 3pt; background: #326CE5; margin-bottom: 14pt; }
+.code { background: #1E1E2E; color: #CDD6F4; font-family: 'Courier New', monospace; font-size: 11pt; line-height: 1.45; padding: 11pt 16pt; border-radius: 6pt; margin: 0 0 10pt 0; }
+.code p { margin: 0; }
+.code .key { color: #89B4FA; font-weight: bold; }
+.code .str { color: #A6E3A1; }
+.code .com { color: #6C7086; }
+.code .num { color: #FAB387; }
+.note { background: #DBEAFE; border-left: 4pt solid #326CE5; padding: 10pt 14pt; font-size: 13pt; color: #1E293B; margin: 0; }
+.note p { margin: 0; }
+.note b { color: #326CE5; }
+</style>
+</head>
+<body>
+<h1>Custom Prometheus alerts</h1>
+<div class="accent"></div>
+<div class="code">
+  <p><span class="key">apiVersion</span>: monitoring.coreos.com/v1</p>
+  <p><span class="key">kind</span>: PrometheusRule</p>
+  <p><span class="key">spec</span>:</p>
+  <p>  <span class="key">groups</span>:</p>
+  <p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">name</span>: app.alerts</p>
+  <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">rules</span>:</p>
+  <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="key">alert</span>: HighErrorRate</p>
+  <p>          <span class="key">expr</span>: <span class="str">|</span></p>
+  <p>            sum(rate(http_requests_total{status=~<span class="str">"5.."</span>}[5m])) &gt; <span class="num">0.05</span></p>
+  <p>          <span class="key">for</span>: <span class="num">5m</span></p>
+  <p>          <span class="key">annotations</span>:</p>
+  <p>            <span class="key">summary</span>: <span class="str">"Error rate &gt; 5% przez 5 min"</span></p>
+  <p>            <span class="key">runbook_url</span>: <span class="str">"https://runbooks.example.com/high-error"</span></p>
+</div>
+<div class="note">
+  <p><b>AlertManager → Slack · PagerDuty · Opsgenie · email · webhook.</b> Routing po severity, deduplication, silencing.</p>
+</div>
+</body>
+</html>
