@@ -5,9 +5,9 @@ metadata:
 spec:
   secretName: app-tls          # cert-manager utworzy ten Secret
   issuerRef:
-    name: letsencrypt-staging
+    name: letsencrypt-prod
     kind: ClusterIssuer
   dnsNames:
-    - python.<TWOJ-PUBLICZNY-IP>.nip.io   # ZMIEŃ — np. python.203-0-113-7.nip.io
+    - python.209.38.189.73.nip.io   # ZMIEŃ — np. python.203-0-113-7.nip.io
   duration: 2160h               # 90 dni
   renewBefore: 360h             # odnowienie 15 dni przed wygaśnięciem

@@ -1,5 +1,21 @@
 # Solution — 07_gateway_api
 
+## Gdzie wziąć Envoy Gateway / cert-manager
+
+Oba instaluje `setup-cluster.sh`; komendy Helm 1:1 są w `README.md` → sekcja „Instalacja Envoy Gateway + cert-manager (Helm)". Domyślne wartości użyte w kursie:
+
+- **Envoy Gateway**: chart `oci://docker.io/envoyproxy/gateway-helm`. Lokalny K3d — wersja `v0.0.0-latest`, domyślnie z CRD-ami. Managed K8s (DOKS/EKS/GKE z Cilium) — wersja **stabilna** (`v1.3.2`) + `--skip-crds` (bo CNI już ma Gateway API CRD — `v0.0.0-latest` wymaga channel `experimental`, którego managed klastry nie mają).
+- **cert-manager**: chart `jetstack/cert-manager`, namespace `cert-manager`, `--set crds.enabled=true` + **dla Gateway API**: `--set config.apiVersion=controller.config.cert-manager.io/v1alpha1 --set config.kind=ControllerConfiguration --set config.enableGatewayAPI=true`. Bez tego ostatniego Challenge zawisa z `gateway api is not enabled`.
+
+Weryfikacja: `kubectl get gatewayclass eg` → `Accepted=True`; `kubectl logs -n cert-manager deployment/cert-manager | grep gateway-shim` → kontroler `gateway-shim` w liście enabled controllers.
+
+## Zweryfikowane na klastrze produkcyjnym
+
+End-to-end setup sprawdzony na **Digital Ocean DOKS k8s 1.35 (Cilium CNI)**:
+- DO LoadBalancer zapewnia publiczne IP dla Service `envoy-default-training-gateway-*`.
+- cert-manager wystawił prawdziwy cert Let's Encrypt (`issuer: CN=R12, O=Let's Encrypt`) dla domeny `python.<DO-LB-IP>.nip.io` przez HTTP-01 challenge z `gatewayHTTPRoute` solverem.
+- Czas od `kubectl apply -f certificate.yaml` do `Ready=True`: ~90 s (2 solver HTTPRoute utworzone przez cert-manager, zwalidowane przez 6 regionalnych nodów Let's Encrypt).
+
 ## Odpowiedzi
 
 ### GatewayClass vs Gateway

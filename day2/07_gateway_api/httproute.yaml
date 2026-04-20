@@ -15,4 +15,4 @@ spec:
             value: /
       backendRefs:
         - name: python-service
-          port: 5002
+          port: 80
