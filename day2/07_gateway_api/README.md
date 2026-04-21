@@ -25,7 +25,7 @@ W tym ćwiczeniu używamy **Envoy Gateway** (zainstalowany przez `setup-cluster.
 
 ### Envoy Gateway
 
-**K3d / kind / Minikube (lokalny klaster, bez Gateway API CRD-ów)** — instalacja domyślna z CRD-ami z chart:
+**K3d / Minikube (lokalny klaster, bez Gateway API CRD-ów)** — instalacja domyślna z CRD-ami z chart:
 ```bash
 helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm \
   --version v1.3.2 \
@@ -33,6 +33,37 @@ helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm \
 
 kubectl wait --timeout=5m -n envoy-gateway-system \
   deployment/envoy-gateway --for=condition=Available
+```
+
+**kind (data-plane pinowany na control-plane)** — to samo co K3d/Minikube, **plus** wskazanie gdzie ma wylądować data-plane Envoya. `day1/03_k8s/kind.yaml` mapuje porty 80/443 **tylko na control-plane** (nadaje mu też label `ingress-ready=true`), który ma domyślny taint `node-role.kubernetes.io/control-plane:NoSchedule`. Bez explicit `tolerations` + `nodeSelector` data-plane pod (`envoy-eg-...`, który kontroler tworzy po zaaplikowaniu pierwszego `Gateway`) ląduje na workerze, a ten nie ma 80/443 na host — `curl http://localhost/` nie trafia w Envoya. K3d/Minikube tego nie wymagają (server jest bez tainta, LB mapuje porty niezależnie od node).
+
+```bash
+# 1) Standardowa instalacja (jak wyżej)
+helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm \
+  --version v1.3.2 \
+  -n envoy-gateway-system --create-namespace
+
+kubectl wait --timeout=5m -n envoy-gateway-system \
+  deployment/envoy-gateway --for=condition=Available
+
+# 2) EnvoyProxy CR — nodeSelector ingress-ready=true + toleration na control-plane taint
+kubectl apply -f envoyproxy-kind.yaml
+
+# 3) Podepnij CR pod GatewayClass "eg" przez parametersRef
+kubectl patch gatewayclass eg --type=merge -p '{
+  "spec": {
+    "parametersRef": {
+      "group": "gateway.envoyproxy.io",
+      "kind":  "EnvoyProxy",
+      "name":  "kind-control-plane",
+      "namespace": "envoy-gateway-system"
+    }
+  }
+}'
+
+# Weryfikacja po utworzeniu pierwszego Gateway — data-plane na control-plane
+kubectl get pods -n envoy-gateway-system -o wide | grep envoy-eg
+# NODE → workshop-control-plane (nie worker).
 ```
 
 **Managed K8s (DOKS / EKS / GKE / Cilium CNI — Gateway API CRD-y już są)** — dorzuć `--skip-crds`:
@@ -44,8 +75,6 @@ helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm \
 ```
 
 Chart rozprowadzany jako **OCI artifact** z Docker Hub (nie klasyczne repo HTTP — stąd `oci://` zamiast `helm repo add`). Instalacja tworzy `GatewayClass eg` automatycznie.
-
-> **kind specifically:** po `helm install eg` zaaplikuj jeszcze `day1/03_k8s/envoyproxy-kind.yaml` + patch GatewayClass — kind mapuje 80/443 tylko na control-plane (który ma taint), więc data-plane Envoya musi tam wylądować z nodeSelector+toleration. Szczegóły i komendy: `day1/03_k8s/README.md` sekcja „Uwaga: kind + Envoy Gateway". K3d (default w `setup-cluster.sh`) tego nie wymaga.
 
 **Dlaczego `v1.3.2`, a nie `v0.0.0-latest`:** tag latest-dev wymaga CRD-ów w channel `experimental` (m.in. `TLSRoute` w `v1`). Managed K8s (DOKS/Cilium) instaluje Gateway API w channel `standard` — bez `TLSRoute` → Envoy Gateway pada z `no matches for kind "TLSRoute"`. Stabilne release'y (`v1.3.x`) pasują do channel standard. Na produkcji pinuj się na konkretny tag, nie `latest`.
 
