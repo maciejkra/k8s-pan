@@ -11,6 +11,7 @@ spec:
     metadata:
       labels:
         project: workshop
+        type: producer
     spec:
       containers:
         - name: producer

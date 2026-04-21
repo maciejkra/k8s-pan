@@ -45,6 +45,8 @@ helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm \
 
 Chart rozprowadzany jako **OCI artifact** z Docker Hub (nie klasyczne repo HTTP — stąd `oci://` zamiast `helm repo add`). Instalacja tworzy `GatewayClass eg` automatycznie.
 
+> **kind specifically:** po `helm install eg` zaaplikuj jeszcze `day1/03_k8s/envoyproxy-kind.yaml` + patch GatewayClass — kind mapuje 80/443 tylko na control-plane (który ma taint), więc data-plane Envoya musi tam wylądować z nodeSelector+toleration. Szczegóły i komendy: `day1/03_k8s/README.md` sekcja „Uwaga: kind + Envoy Gateway". K3d (default w `setup-cluster.sh`) tego nie wymaga.
+
 **Dlaczego `v1.3.2`, a nie `v0.0.0-latest`:** tag latest-dev wymaga CRD-ów w channel `experimental` (m.in. `TLSRoute` w `v1`). Managed K8s (DOKS/Cilium) instaluje Gateway API w channel `standard` — bez `TLSRoute` → Envoy Gateway pada z `no matches for kind "TLSRoute"`. Stabilne release'y (`v1.3.x`) pasują do channel standard. Na produkcji pinuj się na konkretny tag, nie `latest`.
 
 **Dlaczego `--skip-crds` na managed K8s:** DO/EKS/GKE (albo lokalny Cilium) zarządzają CRD-ami Gateway API swoim field managerem. Helm chart Envoy chce zaaplikować te same CRD-y swoim managerem → Server-Side Apply conflict:
