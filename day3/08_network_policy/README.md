@@ -1,12 +1,49 @@
 # 08 — Network Policy: izolacja sieciowa
 
+> ## ⚠️ WAŻNE — wymagane CNI z policy support
+>
+> **Domyślny CNI K3s jest Flannel, który NIE wspiera NetworkPolicy.** Zaaplikowane manifesty pokażą `Created`, ale policy będą **no-op** — cały ruch nadal przechodzi. Student zobaczy "wszystko działa" i wyciągnie złe wnioski.
+>
+> ### K3s / K3d
+>
+> Przy tworzeniu klastra wyłącz Flannel i zainstaluj Calico lub Cilium:
+> ```bash
+> k3d cluster create training \
+>   --k3s-arg '--flannel-backend=none@server:*' \
+>   --k3s-arg '--disable-network-policy=false@server:*' \
+>   --agents 2 --port "80:80@loadbalancer" --port "443:443@loadbalancer"
+>
+> # Potem install Cilium
+> cilium install --version 1.17.6
+> cilium status --wait
+> ```
+>
+> ### Kind
+>
+> Domyślny **kindnet** (od v0.20+) wspiera NetworkPolicy dla **ingress**; od v0.26+ również **egress**. Sprawdź wersję:
+> ```bash
+> kind --version
+> ```
+> Alternatywnie Kind z Cilium:
+> ```yaml
+> # kind.config.yaml
+> networking:
+>   disableDefaultCNI: true
+> ```
+> ```bash
+> kind create cluster --config kind.config.yaml
+> cilium install --version 1.17.6
+> ```
+>
+> Bez tego kroku ćwiczenie nie zadziała.
+
 ## Cel
-Zaaplikować **default-deny** NetworkPolicy w namespace, dodać selektywne `allow` dla wybranych Pod-ów. Zaobserwować jak ruch jest blokowany.
+Zaaplikować **default-deny** NetworkPolicy w namespace, dodać selektywne `allow` dla wybranych Pod-ów. Zaobserwować jak ruch jest blokowany i jak **DNS pułapka** łamie pozornie proste policy.
 
 ## Kontekst
 Domyślnie w K8s **wszystkie Pody mogą rozmawiać ze wszystkimi** — brak izolacji. To wystarczy dla małego klastra, ale w multi-tenant lub prod = security risk.
 
-**NetworkPolicy** = manifest definiujący ingress/egress dla Pod-ów (matched przez `podSelector`). Wymaga **CNI z policy support** (Calico, Cilium, Weave). Flannel default — NIE wspiera.
+**NetworkPolicy** = manifest definiujący ingress/egress dla Pod-ów (matched przez `podSelector`). Egzekwowane przez CNI (Calico, Cilium, kindnet ≥0.20, Weave). Flannel nie.
 
 Wzorzec produkcyjny:
 1. **default-deny** all ingress (i opcjonalnie egress) per namespace
@@ -15,56 +52,26 @@ Wzorzec produkcyjny:
 Bez `default-deny` wszystkie nowe Pody mają full komunikację — łatwo zapomnieć dodać policy → szczelina security.
 
 ## Prereqs
-- K3d/Kind cluster z CNI obsługującym NetworkPolicy (K3d default Flannel — może wymagać reinstalacji z Calico)
+- K3s / Kind / K3d cluster z **CNI obsługującym NetworkPolicy** (patrz banner wyżej!)
+
+## Pliki
+
+| Plik | Co robi |
+|---|---|
+| `test-pods.yaml` | 2 Pody: `client` (app=busybox) + `server` (app=server, z Service) |
+| `deny.network.policy.yaml` | Default-deny — blokuje WSZYSTKO dla wszystkich Pod-ów w NS |
+| `allow.network.policy.yaml` | Allow-all — override default-deny (pokazuje composition) |
+| `network-policy.yaml` | Egress deny dla busybox |
+| `network-policy-dns.yaml` | Egress allow TYLKO do DNS (kube-system/kube-dns) |
+| `allow-frontend-backend.yaml` | Ingress allow: tier=frontend → tier=backend |
 
 ## Zadanie
 
-1. Sprawdź initial state — komunikacja Pod-Pod działa:
-   ```bash
-   kubectl exec -ti nginx-stsf-0 -- curl stsf-service.default
-   # success
-   ```
-
-2. Zaaplikuj default-deny:
-   ```bash
-   kubectl apply -f deny.network.policy.yaml
-   ```
-
-3. Test ponownie:
-   ```bash
-   kubectl exec -ti nginx-stsf-0 -- curl stsf-service.default
-   # timeout — zablokowane
-   ```
-
-4. Usuń policy:
-   ```bash
-   kubectl delete -f deny.network.policy.yaml
-   kubectl exec -ti nginx-stsf-0 -- curl stsf-service.default
-   # znowu działa
-   ```
-
-5. **Praktyka** — selektywne allow:
-   ```yaml
-   apiVersion: networking.k8s.io/v1
-   kind: NetworkPolicy
-   metadata: { name: allow-frontend-to-backend }
-   spec:
-     podSelector: { matchLabels: { app: backend } }
-     ingress:
-       - from:
-           - podSelector: { matchLabels: { app: frontend } }
-   ```
-
+Patrz [`task.md`](./task.md).
 
 ## Linki
 - [Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
 - [Cluster networking](https://kubernetes.io/docs/concepts/cluster-administration/networking/)
 - [Network Policy editor](https://editor.networkpolicy.io)
 - [Recipes (ahmetb)](https://github.com/ahmetb/kubernetes-network-policy-recipes)
-- [K8s networking deep dive (Sookocheff)](https://sookocheff.com/post/kubernetes/understanding-kubernetes-networking-model/)
-
-## Compare CNI
-
-[Spreadsheet — porównanie CNI providers](https://docs.google.com/spreadsheets/d/1qCOlor16Wp5mHd6MQxB5gUEQILnijyDLIExEpqmee2k/edit#gid=0)
-
-Service Mesh — patrz prezentacja **D4 — Service Mesh** (Istio/Linkerd/Cilium).
+- [Cilium NetworkPolicy vs CiliumNetworkPolicy](https://docs.cilium.io/en/stable/security/policy/)

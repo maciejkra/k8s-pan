@@ -1,0 +1,22 @@
+# Burstable QoS: requests < limits (albo tylko jedno ustawione) → średni priorytet.
+# Może burstnąć do limits jeśli node ma wolne zasoby; przy pressure zabijany PRZED Guaranteed.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-burstable
+  labels:
+    qos: burstable
+spec:
+  restartPolicy: Never
+  containers:
+  - name: pkad
+    image: poznajkubernetes/pkad:blue
+    resources:
+      requests:
+        cpu: 50m
+        memory: 100Mi
+      limits:
+        cpu: 200m
+        memory: 400Mi
+    ports:
+    - containerPort: 8080

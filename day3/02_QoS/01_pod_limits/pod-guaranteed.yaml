@@ -1,0 +1,21 @@
+# Guaranteed QoS: requests == limits dla CPU I memory → najwyższy priorytet, zabijany OSTATNI przy node pressure.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-guaranteed
+  labels:
+    qos: guaranteed
+spec:
+  restartPolicy: Never
+  containers:
+  - name: pkad
+    image: poznajkubernetes/pkad:blue
+    resources:
+      requests:
+        cpu: 100m
+        memory: 200Mi
+      limits:
+        cpu: 100m
+        memory: 200Mi
+    ports:
+    - containerPort: 8080

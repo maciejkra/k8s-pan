@@ -8,54 +8,53 @@ Default scheduler może umieścić wszystkie repliki na **jednym** node (lub w j
 
 **TopologySpreadConstraints** = deklaracja "rozrzuć te Pody po <topology key> z max różnicą = maxSkew".
 
-Przykład: `maxSkew: 1, topologyKey: zone, whenUnsatisfiable: DoNotSchedule` = między dowolnymi dwoma zone różnica liczby Pod-ów ≤ 1.
+Przykład: `maxSkew: 1, topologyKey: topology.kubernetes.io/zone, whenUnsatisfiable: DoNotSchedule` = między dowolnymi dwoma zone różnica liczby Pod-ów ≤ 1.
 
 Alternatywy dla high availability:
-- `podAntiAffinity: preferredDuringScheduling...` — starszy, mniej elastyczny
-- **PodTopologySpread** (built-in od K8s 1.25) — scheduler respektuje built-in default constraints (rozrzut per zone + hostname)
+- `podAntiAffinity: preferredDuringScheduling...` — starszy, mniej elastyczny (tylko "unikaj", nie "rozrzuć")
+- **Default Pod Topology Spread** (built-in od K8s 1.25) — scheduler respektuje built-in default constraints (rozrzut per zone + hostname) bez explicit spec
 
 ## Prereqs
-- K3d/Kind cluster z **min. 3 node'ami** (inaczej maxSkew=1 ciężko wymusić)
+- K3s / Kind / K3d cluster z **min. 3 node'ami** (inaczej `maxSkew: 1` trudny do wymuszenia)
+
+## Pliki
+
+- `tsc.pod.yaml` — Deployment z TSC na hostname + zone (pokazuje oba patterns)
 
 ## Zadanie
 
-1. Zaaplikuj Pod z topology constraint:
-   ```yaml
-   apiVersion: v1
-   kind: Pod
-   metadata:
-     name: mypod
-     labels: { foo: bar }
-   spec:
-     topologySpreadConstraints:
-       - maxSkew: 1
-         topologyKey: kubernetes.io/hostname
-         whenUnsatisfiable: DoNotSchedule
-         labelSelector:
-           matchLabels: { foo: bar }
-     containers:
-       - name: pause
-         image: registry.k8s.io/pause:3.9
-   ```
-
-2. Wdroż kilka (5) replik z tą etykietą. Sprawdź:
+1. Zaaplikuj:
    ```bash
-   kubectl get pods -l foo=bar -o wide
-   # Spodziewane: rozłożone po różnych hostname (nodeName)
+   kubectl apply -f tsc.pod.yaml
+   kubectl wait --for=condition=available deployment/tsc-demo --timeout=60s
    ```
 
-3. **Eksperyment**: scale do 10 replik gdy masz 3 nody. `maxSkew: 1` wymaga 3-4-3 rozłożenia (lub podobnie).
+2. Sprawdź rozkład:
+   ```bash
+   kubectl get pods -l app=tsc-demo -o wide --no-headers | awk '{print $7}' | sort | uniq -c
+   # Spodziewane: rozłożone po różnych NODE (max różnica=1)
+   # Przy 3 node'ach i 5 replikach: 2-2-1 lub 1-2-2
+   ```
 
-4. **whenUnsatisfiable: DoNotSchedule vs ScheduleAnyway**:
-   - `DoNotSchedule` — Pod Pending gdy constraint nie da się spełnić
-   - `ScheduleAnyway` — soft preference, scheduler zrobi co może, ale zaplanuje w każdym razie
+3. **Eksperyment**: scale do 10 replik:
+   ```bash
+   kubectl scale deployment tsc-demo --replicas=10
+   kubectl get pods -l app=tsc-demo -o wide --no-headers | awk '{print $7}' | sort | uniq -c
+   # Przy 3 nodach: 4-3-3 lub 3-4-3 (maxSkew 1)
+   ```
 
-## Pytania kontrolne
-1. `topologyKey: zone` vs `topologyKey: kubernetes.io/hostname` — kiedy które?
+4. **whenUnsatisfiable**: zmień z `DoNotSchedule` na `ScheduleAnyway`, scale do 100, obserwuj:
+   - `DoNotSchedule`: niektóre repliki Pending (scheduler nie łamie constraint)
+   - `ScheduleAnyway`: wszystkie zescheduled, ale constraint może być naruszony (soft)
+
+## Pytania
+
+1. `topologyKey: zone` vs `topologyKey: kubernetes.io/hostname` — kiedy które? Który jest "silniejszy"?
 2. `maxSkew: 1` + 3 nody + 10 replik — jakie rozłożenia są legalne?
-3. TSC + podAntiAffinity na tym samym Podzie — czy się sumują?
-4. Built-in default TSC (od 1.25) — kiedy użyteczne bez explicit konfiguracji?
+3. TSC + podAntiAffinity na tym samym Podzie — czy się sumują? (Tak — oba są sprawdzane przy schedulingu.)
+4. Built-in default TSC (od 1.25) — kiedy użyteczny bez explicit konfiguracji? (Hint: zero-config HA dla Deployment bez spec TSC.)
+5. **Bonus**: `minDomains` (K8s 1.27+) — jak to zmienia zachowanie TSC?
 
 ## Linki
 - [Topology Spread Constraints](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/)
-- [PodTopologySpread plugin](https://kubernetes.io/docs/reference/scheduling/config/#scheduling-plugins)
+- [Default PodTopologySpread plugin](https://kubernetes.io/docs/reference/scheduling/config/#scheduling-plugins)

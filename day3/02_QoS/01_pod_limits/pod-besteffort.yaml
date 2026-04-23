@@ -1,0 +1,16 @@
+# BestEffort QoS: BRAK requests i limits → najniższy priorytet, zabijany PIERWSZY przy node pressure.
+# Nadaje się tylko dla batch/dev, nigdy dla produkcji krytycznej.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-besteffort
+  labels:
+    qos: besteffort
+spec:
+  restartPolicy: Never
+  containers:
+  - name: pkad
+    image: poznajkubernetes/pkad:blue
+    ports:
+    - containerPort: 8080
+    # brak resources: {} — celowo

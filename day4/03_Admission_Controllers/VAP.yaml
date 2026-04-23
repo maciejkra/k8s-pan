@@ -1,7 +1,7 @@
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicy
 metadata:
-  name: pod-security.maciek
+  name: pod-security-maciek
 spec:
   failurePolicy: Fail
   matchConstraints:
@@ -24,19 +24,21 @@ spec:
     message: 'all containers must NOT set allowPrivilegeEscalation to true'
   - expression: variables.securityContexts.all(c, c.?privileged != optional.of(true))
     message: 'all containers must NOT set privileged to true'
+  # Guard `has(c.resources)` przed sprawdzeniem pól wewnętrznych.
   - expression: variables.containers.all(c, has(c.resources) && has(c.resources.requests) && has(c.resources.requests.cpu) && has(c.resources.requests.memory))
     message: 'All containers must set both CPU and memory requests.'
-  - expression: variables.containers.all(c, !has(c.resources.limits.cpu))
-    message: 'Containers must not set CPU limits.'
-  - expression: variables.containers.all(c, has(c.resources.limits.memory) && c.resources.limits.memory == c.resources.requests.memory)
+  # Guard `has(c.resources.limits)` przed sprawdzeniem limits.cpu/memory.
+  - expression: variables.containers.all(c, has(c.resources) && (!has(c.resources.limits) || !has(c.resources.limits.cpu)))
+    message: 'Containers must not set CPU limits (use memory limits only for QoS Burstable).'
+  - expression: variables.containers.all(c, has(c.resources) && has(c.resources.limits) && has(c.resources.limits.memory) && c.resources.limits.memory == c.resources.requests.memory)
     message: 'Memory limits must be set and equal to memory requests for all containers.'
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicyBinding
 metadata:
-  name: pod-security.policy-binding.maciek
+  name: pod-security-binding-maciek
 spec:
-  policyName: pod-security.maciek
+  policyName: pod-security-maciek
   validationActions: ["Deny"]
   matchResources:
     namespaceSelector:

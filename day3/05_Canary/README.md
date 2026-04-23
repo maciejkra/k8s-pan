@@ -1,7 +1,7 @@
 # 05 — Canary deployment + przegląd strategii
 
 ## Cel
-Wdrożyć **canary release** ręcznie (dwa Deploymenty + **HTTPRoute** weighted routing przez Gateway API). Zrozumieć kiedy canary, kiedy inne strategie.
+Wdrożyć **canary release** przez Gateway API `weightedBackendRefs` (Envoy Gateway z D2/07). Zrozumieć kiedy canary, kiedy inne strategie.
 
 ## Kontekst
 Strategie wdrożeń = jak migrować od starej wersji do nowej bez downtime / z minimalnym ryzykiem:
@@ -14,54 +14,33 @@ Strategie wdrożeń = jak migrować od starej wersji do nowej bez downtime / z m
 
 → **Pełne porównanie wszystkich 6 strategii: [`strategies.md`](./strategies.md)**
 
-W tym ćwiczeniu — **Canary ręcznie** (bez Argo Rollouts / Flagger). Cel: zobaczyć podstawowy mechanizm.
+W tym ćwiczeniu — **Canary przez Gateway API weighted routing** (cross-link D2/07 Envoy Gateway). Cel: zobaczyć jak HTTPRoute `backendRefs[].weight` dynamicznie zmienia rozkład ruchu.
 
 ## Prereqs
-- K3d cluster z `setup-cluster.sh` (Envoy Gateway zainstalowany)
-- Gateway API z **D2/07** (Gateway `training-gateway` w namespace `default`)
+- K3s / Kind / K3d cluster
+- **Gateway API z D2/07** zainstalowany i działający (`training-gateway` Gateway z listenerem HTTP:80)
+- Gateway API `Programmed=True`:
+  ```bash
+  kubectl get gateway training-gateway
+  # ADDRESS: ... PROGRAMMED: True
+  ```
+
+## Pliki
+
+- `strategies.md` — teoria 6 strategii deploymentowych
+- `solution/` — gotowe manifesty dla canary przez weighted HTTPRoute
+  - `deployment-v1.yaml` — v1 (pkad:blue, 2 repliki)
+  - `deployment-v2.yaml` — v2 (pkad:green, 1 replika)
+  - `httproute-canary.yaml` — HTTPRoute z weight 70/30
+- `canary-demo/` — **advanced bonus**: własna Go aplikacja z Dockerfile + Argo Rollouts deployment (dla zaawansowanych, poza main task)
 
 ## Zadanie
 
-### Wariant prosty (bez tooling)
-
-1. Stwórz 2 Deployments w 2 różnych namespace:
-   - `python-api` (v1) w namespace `prod`
-   - `nginx` (v2) w namespace `canary`
-
-2. Stwórz **HTTPRoute** (Gateway API) z weighted routing — `backendRefs` z polem `weight`:
-   - 70 → `python-api`
-   - 30 → `nginx`
-
-   (Ponieważ Service-y są w innych namespace niż Gateway, dorzuć **`ReferenceGrant`** w obu namespace dla `HTTPRoute` z `default`.)
-
-3. Test:
-   ```bash
-   for i in {1..100}; do curl -s api.127.0.0.1.nip.io | head -c 30; echo; done | sort | uniq -c
-   # ~70 hits python-api, ~30 hits nginx
-   ```
-
-4. Stopniowo zwiększaj `weight` po stronie nginx (50/50, 80/20, 100% nginx) — w produkcji tu byłaby pauza na monitoring metryk.
-
-### Bonus — Argo Rollouts (rekomendowane w produkcji)
-
-```bash
-# install Argo Rollouts
-helm install argo-rollouts argo/argo-rollouts -n argo-rollouts --create-namespace
-
-# Rollout zamiast Deployment definiuje canary steps:
-# steps:
-#   - setWeight: 20
-#   - pause: { duration: 5m }
-#   - setWeight: 50
-#   - pause: { duration: 5m }
-#   - setWeight: 100
-```
-
-→ patrz `canary-demo/` w tym katalogu dla pełnego przykładu.
-
+Patrz [`task.md`](./task.md).
 
 ## Linki
 - [Container Solutions: K8s Deployment Strategies](https://github.com/ContainerSolutions/k8s-deployment-strategies)
+- [Gateway API — Weighted Routing](https://gateway-api.sigs.k8s.io/guides/traffic-splitting/)
 - [Argo Rollouts](https://argoproj.github.io/argo-rollouts/)
 - [Flagger](https://flagger.app/)
-- [`strategies.md`](./strategies.md) — pełne porównanie 6 strategii
+- [Progressive Delivery podcast (Dan Lorenc)](https://www.youtube.com/results?search_query=progressive+delivery+kubernetes)

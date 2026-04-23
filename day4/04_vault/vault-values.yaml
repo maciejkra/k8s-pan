@@ -1,8 +1,6 @@
 injector:
   replicas: 1
   agentDefaults:
-    # For more information on configuring resources, see the K8s documentation:
-    # https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
     cpuLimit: "500m"
     cpuRequest: "50m"
 
@@ -19,9 +17,10 @@ injector:
 server:
   updateStrategyType: "OnDelete"
   affinity: null
+  # dataStorage OFF — dev mode jest zawsze in-memory, persistence się kłóci.
+  # Dla produkcji: wyłącz dev.enabled, włącz dataStorage + raft storage backend.
   dataStorage:
-    enabled: true
-    size: 1Gi
+    enabled: false
   dev:
     enabled: true
     devRootToken: "root"
@@ -31,12 +30,6 @@ ui:
   publishNotReadyAddresses: true
 
 csi:
-  # True if you want to install a secrets-store-csi-driver-provider-vault daemonset.
-  #
-  # Requires installing the secrets-store-csi-driver separately, see:
-  # https://github.com/kubernetes-sigs/secrets-store-csi-driver#install-the-secrets-store-csi-driver
-  #
-  # With the driver and provider installed, you can mount Vault secrets into volumes
-  # similar to the Vault Agent injector, and you can also sync those secrets into
-  # Kubernetes secrets.
+  # secrets-store-csi-driver-provider-vault daemonset.
+  # Wymaga secrets-store-csi-driver zainstalowanego osobno (patrz task.md).
   enabled: true

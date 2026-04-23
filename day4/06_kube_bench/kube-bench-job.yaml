@@ -6,20 +6,27 @@ spec:
   template:
     spec:
       hostPID: true
+      # Tolerations dla control-plane (Kind taintuje CP; K3s zazwyczaj nie).
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
       containers:
         - name: kube-bench
-          image: aquasec/kube-bench:latest
+          image: aquasec/kube-bench:v0.10.1
+          # Dla K3s/K3d: uwzględnij benchmark. Dla vanilla K8s (Kind): bez --benchmark = autodetekcja.
           command: ["kube-bench"]
-          # Dla K3s/K3d użyj: ["kube-bench", "--benchmark", "k3s-cis-1.7"]
+          # Alternatywne tryby (odkomentuj):
+          # command: ["kube-bench", "--benchmark", "k3s-cis-1.24"]     # dla K3s/K3d
+          # command: ["kube-bench", "--benchmark", "eks-1.5.0"]         # dla EKS worker audit
           volumeMounts:
-            - { name: var-lib-etcd,        mountPath: /var/lib/etcd,            readOnly: true }
+            # Uwaga: K3s/K3d etcd jest w binary, brak /var/lib/etcd. kube-bench przepuszcza z INFO.
             - { name: var-lib-kubelet,     mountPath: /var/lib/kubelet,         readOnly: true }
             - { name: etc-systemd,         mountPath: /etc/systemd,             readOnly: true }
             - { name: etc-kubernetes,      mountPath: /etc/kubernetes,          readOnly: true }
             - { name: usr-bin,             mountPath: /usr/local/mount-from-host/bin, readOnly: true }
       restartPolicy: Never
       volumes:
-        - { name: var-lib-etcd,    hostPath: { path: /var/lib/etcd } }
         - { name: var-lib-kubelet, hostPath: { path: /var/lib/kubelet } }
         - { name: etc-systemd,     hostPath: { path: /etc/systemd } }
         - { name: etc-kubernetes,  hostPath: { path: /etc/kubernetes } }

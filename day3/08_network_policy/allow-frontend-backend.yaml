@@ -1,0 +1,18 @@
+# Selektywny allow: tylko Pody z labelem tier=frontend mogą wchodzić na tier=backend.
+# Razem z default-deny (deny.network.policy.yaml) daje mikrosegmentację: backend
+# niedostępny dla wszystkich OPRÓCZ frontend.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend-to-backend
+spec:
+  podSelector:
+    matchLabels:
+      tier: backend
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+      - podSelector:
+          matchLabels:
+            tier: frontend

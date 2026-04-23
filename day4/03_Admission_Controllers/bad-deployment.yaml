@@ -1,0 +1,28 @@
+# Celowo naruszający Deployment — VAP go ODRZUCI.
+# Problemy:
+# - brak securityContext.runAsNonRoot
+# - brak resources.requests
+# - CPU limit ustawiony (VAP zabrania)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bad-app
+  namespace: maciek
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bad-app
+  template:
+    metadata:
+      labels:
+        app: bad-app
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.27-alpine
+        resources:
+          limits:
+            cpu: "500m"      # zabroniony przez VAP
+            memory: "128Mi"
+        # brak securityContext → VAP odrzuca

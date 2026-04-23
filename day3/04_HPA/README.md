@@ -1,54 +1,54 @@
 # 04 — Horizontal Pod Autoscaler (HPA)
 
 ## Cel
-Skalować automatycznie Deployment na podstawie zużycia CPU. Zaobserwować scale-up pod obciążeniem i scale-down po zatrzymaniu.
+Skalować automatycznie Deployment na podstawie zużycia CPU. Zaobserwować scale-up pod obciążeniem i scale-down po zatrzymaniu. Zrozumieć `spec.behavior` (policies dla scaleUp/scaleDown).
 
 ## Kontekst
 **HPA** = kontroler zwiększający/zmniejszający `replicas` Deployment (lub StatefulSet) na podstawie metryk:
 - **CPU/memory** (przez Metrics Server — D3/03)
-- **Custom metrics** (przez Prometheus Adapter — D5/04)
+- **Custom metrics** (przez Prometheus Adapter — D5/02)
 - **External metrics** (np. SQS queue length — wymaga adapter)
 
-Algorytm: `desiredReplicas = currentReplicas × (currentMetric / desiredMetric)`
+### Algorytm
 
-Defaults:
-- `--horizontal-pod-autoscaler-sync-period=15s` — częstotliwość sprawdzania
-- `--horizontal-pod-autoscaler-downscale-stabilization=5m` — żeby nie flapowało (powolny scale-down)
+```
+desiredReplicas = ceil(currentReplicas × currentMetric / targetMetric)
+```
 
-**VPA (Vertical Pod Autoscaler)** = analogicznie ale zmienia **resources** (requests/limits) — patrz oddzielny komponent.
-**Cluster Autoscaler / Karpenter** = dodaje/usuwa nody (D5/04 GPU + slajd prezentacji "GPU production practices").
+Przykład: 3 Pody × 80% avg CPU, target 50% → `ceil(3 × 80/50) = 5` replik.
+
+### `spec.behavior` — kontrola tempa
+
+Domyślnie:
+- **scaleUp**: 0s stabilization, policies +100% albo +4 Pody co 15s (szybki burst).
+- **scaleDown**: 300s stabilization (5min), policies -100% co 15s (ale czeka 5min po ostatnim peaku).
+
+Dlaczego asymmetric? Scale-up = "app ma się nie wywrócić, lepiej mieć za dużo". Scale-down = "poczekajmy aż ruch na pewno się skończył, nie flapujmy".
+
+Tu pokazujemy customowe:
+- `scaleUp`: 0s window + policies +100% albo +4 co 30s → agresywny burst
+- `scaleDown`: 60s window → szybszy scale-down niż default (dla nauki, w produkcji zostaw 5min)
+
+## VPA vs Cluster Autoscaler
+
+- **VPA (Vertical Pod Autoscaler)** — zmienia **resources** (requests/limits) zamiast `replicas`. Osobny komponent, wymaga instalacji.
+- **Cluster Autoscaler / Karpenter** — dodaje/usuwa **nody** (GPU D5/04 + slajd prezentacji "GPU production practices").
 
 ## Prereqs
-- K3d/Kind cluster z **metrics-server** (D3/03)
-- Aplikacja `php-apache` (z manifestu w katalogu)
+- K3s / Kind / K3d cluster
+- **Metrics Server** (D3/03) musi działać (`kubectl top pods` zwraca wartości)
+
+## Pliki
+
+- `hpa/hpa-dep.yaml` — Deployment `php-apache` (demo app) + Service
+- `hpa/hpa.yaml` — HPA z target CPU 50% + customowy `behavior`
 
 ## Zadanie
 
-1. Wdroż app i HPA:
-   ```bash
-   kubectl apply -f .
-   kubectl get hpa
-   # NAME       REFERENCE         TARGETS         MIN  MAX  REPLICAS
-   # php-apache Deployment/...    <unknown>/50%   1    10   1
-   ```
-
-2. Wygeneruj load:
-   ```bash
-   kubectl run -i --tty load-generator --rm --image=busybox --restart=Never -- \
-     /bin/sh -c "while sleep 0.01; do wget -q -O- http://php-apache; done"
-   ```
-
-3. W innym terminalu obserwuj:
-   ```bash
-   kubectl get hpa --watch
-   kubectl get pods --watch
-   # Repliki rosną
-   ```
-
-4. Zatrzymaj load (Ctrl+C). Po ~5 min replicas zaczną spadać.
-
+Patrz [`task.md`](./task.md).
 
 ## Linki
 - [HPA walkthrough](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/)
-- [Metrics Server](https://github.com/kubernetes-sigs/metrics-server)
 - [HPA algorithm details](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#algorithm-details)
+- [HPA behavior (policies)](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#configurable-scaling-behavior)
+- [Metrics Server](https://github.com/kubernetes-sigs/metrics-server)

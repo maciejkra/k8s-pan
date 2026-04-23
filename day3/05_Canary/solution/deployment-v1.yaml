@@ -1,0 +1,43 @@
+# Wersja v1 ("stara" — w canary będzie dostawać 70% ruchu).
+# Obraz pkad:blue — strona zwraca "blue"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: canary-app-v1
+  labels:
+    app: canary-app
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: canary-app
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: canary-app
+        version: v1
+    spec:
+      containers:
+      - name: pkad
+        image: poznajkubernetes/pkad:blue
+        ports:
+        - containerPort: 8080
+        resources:
+          requests: { cpu: 50m, memory: 64Mi }
+          limits:   { cpu: 200m, memory: 128Mi }
+---
+# Osobny Service (tylko selektuje v1) — HTTPRoute będzie weight'ować pomiędzy v1 a v2 Service.
+apiVersion: v1
+kind: Service
+metadata:
+  name: canary-app-v1
+spec:
+  selector:
+    app: canary-app
+    version: v1
+  ports:
+  - port: 80
+    targetPort: 8080
+    name: http

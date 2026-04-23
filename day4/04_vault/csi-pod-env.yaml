@@ -11,7 +11,7 @@ metadata:
 spec:
   serviceAccount: app-sa
   containers:
-    - image: nginx
+    - image: nginx:1.27-alpine
       name: webapp
       volumeMounts:
         - name: secrets-store-inline
@@ -29,4 +29,4 @@ spec:
         driver: secrets-store.csi.k8s.io
         readOnly: true
         volumeAttributes:
-          secretProviderClass: "vault-database"
+          secretProviderClass: "vault-database-env"   # spójne z nową nazwą

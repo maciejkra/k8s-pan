@@ -1,7 +1,7 @@
 # 09 — DaemonSet
 
 ## Cel
-Wdrożyć DaemonSet, zrozumieć jego model "jeden Pod per node" i typowe use cases.
+Wdrożyć DaemonSet, zrozumieć jego model "jeden Pod per node", zobaczyć **realistyczny** use case (node-exporter — scraper metryk per-host).
 
 ## Kontekst
 **DaemonSet** = kontroler uruchamiający **dokładnie jeden Pod na każdym (pasującym) node**. Gdy dochodzi nowy node — DaemonSet automatycznie tworzy tam Pod. Gdy node znika — Pod znika z nim.
@@ -15,41 +15,25 @@ Typowe use cases (zawsze coś per-node):
 
 Można ograniczyć przez `nodeSelector`/`affinity` (np. tylko nody GPU dostają DCGM exporter).
 
+### Kluczowe właściwości
+
+- **Tolerations for control-plane** — systemowe DaemonSety (log/metric/CNI) zwykle muszą wylądować **też na control-plane**, nie tylko na workerach. Kind domyślnie taintuje CP (`node-role.kubernetes.io/control-plane:NoSchedule`), K3s/K3d domyślnie nie. Dla przenośności manifestu **zawsze daj tolerations** dla obu taintów.
+- **UpdateStrategy** — domyślnie `RollingUpdate` (zastępuje Pody po jednym). Alternatywa: `OnDelete` (nic nie robi aż admin `kubectl delete pod`).
+- **HostPath + hostNetwork** — typowe dla DS które potrzebują dostępu do filesystem hosta albo muszą słuchać na konkretnym porcie (node-exporter:9100).
+
 ## Prereqs
-- K3d/Kind cluster z 2+ node'ami
+- K3s / Kind / K3d cluster z 2+ node'ami (dla Kind: `kind.config.yaml` z `workers: 2`)
+
+## Pliki
+
+- `daemonset.yaml` — node-exporter (prometheus scraper) z tolerations, hostPath, hostNetwork
 
 ## Zadanie
 
-1. Wdroż:
-   ```bash
-   kubectl apply -f .
-   ```
-
-2. Sprawdź — Pod-y na każdym worker node:
-   ```bash
-   kubectl get daemonset
-   kubectl get pods -o wide
-   # NAME            READY  NODE
-   # daemon-xxxx     1/1    k3d-training-agent-0
-   # daemon-yyyy     1/1    k3d-training-agent-1
-   ```
-
-3. Dodaj nowy node (jeśli używasz K3d):
-   ```bash
-   k3d node create extra --cluster training
-   sleep 30
-   kubectl get pods -o wide
-   # Nowy Pod DaemonSet na nowym node
-   ```
-
-4. Usuń node:
-   ```bash
-   k3d node delete extra
-   kubectl get pods -o wide
-   # Pod DaemonSet automatycznie zniknął
-   ```
-
+Patrz [`task.md`](./task.md).
 
 ## Linki
 - [DaemonSet docs](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/)
-- [Daemon Pods spec](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/#daemon-pods-and-replicasetcontroller)
+- [Update strategies](https://kubernetes.io/docs/tasks/manage-daemon/update-daemon-set/)
+- [Taints & tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/)
+- [node-exporter metrics list](https://github.com/prometheus/node_exporter)

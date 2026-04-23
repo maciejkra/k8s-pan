@@ -1,16 +1,26 @@
+# Rozszerzenie poprzedniej policy — pozwól busybox na egress TYLKO do DNS.
+# Klasyczna pułapka: default-deny łamie CoreDNS lookup → wszystko co używa service DNS pada.
+# Ta policy pokazuje jak odblokować DNS a resztę egressu nadal trzymać zablokowaną.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: foo-deny-egress
+  name: busybox-allow-dns-only
 spec:
   podSelector:
     matchLabels:
-      app: foo
+      app: busybox
   policyTypes:
   - Egress
   egress:
-  # allow DNS resolution
-  - ports:
+  # Allow DNS resolution (kube-dns / CoreDNS)
+  - to:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: kube-system
+        podSelector:
+          matchLabels:
+            k8s-app: kube-dns
+    ports:
     - port: 53
       protocol: UDP
     - port: 53

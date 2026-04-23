@@ -1,3 +1,9 @@
+# Ten Pod ma TYLKO limits.memory (bez requests, bez cpu) — celowo "niekompletny".
+# LimitRange wstrzyknie:
+#  - defaultRequest.cpu: 500m (requests)
+#  - default.cpu: 500m (limits, bo brak)
+#  - requests.memory = limits.memory (bo request brak)
+# Wynik: Pod dostanie pełen profil CPU + memory, QoS = Burstable (requests<limits bo CPU dopasowane, memory tylko limit).
 apiVersion: v1
 kind: Pod
 metadata:
@@ -7,10 +13,10 @@ metadata:
 spec:
   containers:
   - name: myapp
-    image: nginx
+    image: nginx:1.27-alpine
     resources:
       limits:
         memory: 128Mi
-        cpu: 2
+        # cpu celowo BRAK — LimitRange wstrzyknie default
     ports:
       - containerPort: 80

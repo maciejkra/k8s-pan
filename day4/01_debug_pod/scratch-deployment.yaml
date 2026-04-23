@@ -1,0 +1,47 @@
+# Distroless Go app — celowy target dla debugowania.
+# gcr.io/distroless/static:nonroot NIE MA shell, apt, tcpdump — "kubectl exec sh" padnie.
+# Kontener słucha na 8080 (demo z netshoot).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: distroless-app
+  labels:
+    app: distroless-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: distroless-app
+  template:
+    metadata:
+      labels:
+        app: distroless-app
+    spec:
+      containers:
+      - name: app
+        # Przykład distroless z prawdziwego projektu — hello-world service
+        # Alternatywa: własny build multi-stage z D1/02_secure_image
+        image: gcr.io/distroless/static-debian12:nonroot
+        command: ["/pause"]   # pause binary występuje w distroless static; dla "prawdziwej" app wrzuć tam własną
+        ports:
+        - containerPort: 8080
+        resources:
+          requests: { cpu: 10m, memory: 20Mi }
+          limits:   { memory: 60Mi }
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65532    # "nonroot" user w distroless
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: { drop: ["ALL"] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: distroless-app
+spec:
+  selector:
+    app: distroless-app
+  ports:
+  - port: 8080
+    targetPort: 8080

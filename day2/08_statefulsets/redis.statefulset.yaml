@@ -13,11 +13,11 @@ spec:
     name: redis
 ---
 # Klient (np. python-deployment z D1/10) używa tego adresu.
-# REDIS_HOST = redis-servcie  (zachowujemy tę samą nazwę co w D1/10 dla kompatybilności)
+# REDIS_HOST = redis-service
 apiVersion: v1
 kind: Service
 metadata:
-  name: redis-servcie
+  name: redis-service
   labels:
     szkolenie: k8s
 spec:
@@ -25,6 +25,8 @@ spec:
     app: redis
   ports:
   - port: 6379
+    targetPort: 6379
+    name: redis
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -46,9 +48,10 @@ spec:
     spec:
       containers:
       - name: redis
-        image: redis:alpine
+        image: redis:7-alpine
         ports:
         - containerPort: 6379
+          name: redis
         # AOF persistence — zapisuje każdą operację write na dysk
         args: ["--appendonly", "yes", "--dir", "/data"]
         volumeMounts:
@@ -57,9 +60,12 @@ spec:
         livenessProbe:
           exec:
             command: ["redis-cli", "ping"]
+          initialDelaySeconds: 5
+          periodSeconds: 10
         readinessProbe:
           tcpSocket:
             port: 6379
+          initialDelaySeconds: 3
   volumeClaimTemplates:
   - metadata:
       name: redis-data

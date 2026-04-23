@@ -1,31 +1,36 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: python-deployment-taints
+  name: taints-demo
   labels:
-    app: python-taints
+    app: taints-demo
 spec:
   replicas: 1
   strategy:
-   type: RollingUpdate
-   rollingUpdate:
-     maxUnavailable: 1
-     maxSurge: 1 # maximum above no replicas
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
-      app: python-taints
+      app: taints-demo
   template:
     metadata:
-      name: python-pod-taints
       labels:
-        app: python-taints
+        app: taints-demo
     spec:
+      # Odkomentuj tolerations po zrobieniu `kubectl taint` na node (patrz task.md).
+      # Pod BEZ tolerations nie zostanie zescheduleowany na tainted node.
       #tolerations:
-      #- key: "key"
-      #  operator: "Exists"
+      #- key: "dedicated"
+      #  operator: "Equal"
+      #  value: "workshop"
       #  effect: "NoSchedule"
       containers:
-      - name: python-container
-        image: krajewskim/python-api:redis
+      - name: nginx
+        image: nginx:1.27-alpine
         ports:
-          - containerPort: 5002
+          - containerPort: 80
+        resources:
+          requests: { cpu: 50m, memory: 64Mi }
+          limits:   { cpu: 200m, memory: 128Mi }

@@ -4,17 +4,20 @@ metadata:
   name: falco-custom-rules
   namespace: falco
 data:
-  custom.yaml: |
+  custom-rules.yaml: |
+    - list: allowed_etc_writers
+      items: [apt-get, dpkg, rpm, yum, npm, pip, gem, cargo, systemd-tmpfiles, apk]
+
     - rule: Custom - Write to /etc
       desc: Wykrywa zapis do /etc/ wewnątrz kontenera (typowy backdoor)
       condition: >
         evt.type=open and evt.is_open_write=true
         and fd.name startswith /etc/
         and container
-        and not user.name in (root_user_in_container)
+        and not proc.name in (allowed_etc_writers)
       output: >
         Custom rule: zapis do /etc wewnątrz kontenera
-        (user=%user.name file=%fd.name container=%container.name image=%container.image.repository)
+        (user=%user.name file=%fd.name proc=%proc.name container=%container.name image=%container.image.repository)
       priority: WARNING
       tags: [custom, filesystem]
 
@@ -30,8 +33,3 @@ data:
         Podejrzane wyjście TCP na port 4444 (container=%container.name dest=%fd.rip)
       priority: CRITICAL
       tags: [custom, network, mitre_command_and_control]
----
-# Patch dla Falco DaemonSet — montuje custom.yaml do /etc/falco/rules.d/
-# Zazwyczaj robi się to przez helm values:
-#   --set extraFiles[0].name=custom.yaml --set extraFiles[0].content=...
-# Ale dla demo: edytuj DaemonSet ręcznie albo użyj `helm upgrade --reuse-values`

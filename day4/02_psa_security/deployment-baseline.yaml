@@ -1,0 +1,24 @@
+# Deployment w baseline NS — nginx (domyślnie root) PRZEJDZIE.
+# Baseline blokuje tylko privileged/hostPath/hostNet, nie blokuje root user.
+# Ale audit+warn na restricted → zobaczysz warning w kubectl output.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+  namespace: psa-baseline
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+      - name: myapp
+        image: nginx:1.27-alpine
+        resources:
+          requests: { cpu: 50m, memory: 64Mi }
+          limits: { memory: 128Mi }

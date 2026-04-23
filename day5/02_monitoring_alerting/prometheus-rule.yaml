@@ -1,0 +1,35 @@
+# PrometheusRule CRD — definiuje regułę alertingową dla Prometheus Operator.
+# Operator automatycznie podnosi wszystkie PrometheusRule w klastrze i przekazuje do Prometheus.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: app-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack   # matchuje ruleSelector Prometheus Operator
+spec:
+  groups:
+    - name: app.availability
+      rules:
+        - alert: HighErrorRate
+          expr: |
+            sum(rate(http_requests_total{status=~"5.."}[5m])) by (service)
+            / sum(rate(http_requests_total[5m])) by (service)
+            > 0.05
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Error rate > 5% przez 5 min na service {{ $labels.service }}"
+            description: "Service {{ $labels.service }} zwraca błąd HTTP 5xx dla {{ $value | humanizePercentage }} requestów."
+            runbook_url: "https://runbooks.example.com/high-error-rate"
+
+        - alert: PodRestartingFrequently
+          expr: |
+            rate(kube_pod_container_status_restarts_total[15m]) * 60 > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} restartuje się"
+            description: "Container {{ $labels.container }} w Pod {{ $labels.namespace }}/{{ $labels.pod }} miał restart w ostatnich 15 min."

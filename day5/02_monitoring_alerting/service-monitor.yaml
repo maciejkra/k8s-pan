@@ -1,33 +1,21 @@
+# ServiceMonitor CRD — instruuje Prometheus Operator żeby scrape'ował metryki z Service.
+# Matching po labelach Service (selector) + endpoint config (port, path, interval).
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: python-service-monitor
+  namespace: monitoring
   labels:
+    release: kube-prometheus-stack   # matchuje serviceMonitorSelector Prometheus Operator
     project: python
 spec:
+  # Matchuje Service z D1/10 (python app). Label dodany przez helm chart albo ręcznie.
   selector:
     matchLabels:
-      app.kubernetes.io/instance: python
+      app: python           # D1/10 ma label app: python
   namespaceSelector:
-    any: true
+    any: true               # scrape ze wszystkich NS; w produkcji lepiej lista: [prod, staging]
   endpoints:
-  - port: api
+  - port: api               # nazwa portu ze Service (NIE numer!) — D1/10 ma port 5002 named 'api'
     interval: 30s
     path: /metrics
----
-apiVersion: monitoring.coreos.com/v1
-kind: PrometheusRule
-metadata:
-  name: python-alert
-spec:
-  groups:
-  - name: python-alerts
-    rules:
-    - alert: HighRequestRate  
-      expr: rate(info_requests_total[1m]) * 60 > 5  
-      for: 1m
-      labels:
-        severity: warning
-      annotations:
-        summary: "Wysoki wskaźnik żądań"
-        description: "Metryka info_requests_created generuje więcej niż 5 żądań na minutę."

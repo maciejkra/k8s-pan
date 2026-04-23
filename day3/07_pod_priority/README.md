@@ -17,44 +17,40 @@ System zawiera dwie wbudowane klasy:
 Dla aplikacji użytkownika definiujemy własne klasy (typowo: 1000 = high, 100 = normal, -10 = best-effort).
 
 ## Prereqs
-- K3d cluster (`./setup-cluster.sh`)
-- Klaster z ograniczonymi zasobami (K3d ma typowo 4 CPU / 8 GB — wystarczy)
+- K3s / Kind / K3d cluster
+- **Ważne: rozmiar klastra wpływa na czy preemption faktycznie się odpali**. Klaster z luzem zasobów scheduler'a nie zmusi do preemption — high-priority Pod po prostu trafi na wolne miejsce.
+
+### Tuning klastra dla demo
+
+Manifesty są skalibrowane pod K3d/Kind z **2 workery × ~2 CPU każdy** (~4 CPU allocatable). Jeśli Twój klaster ma więcej:
+- Zwiększ `replicas` w `low-priority-deployment.yaml` (żeby nasycić klaster)
+- Albo zmniejsz allocatable przez utworzenie dodatkowego "resource hog" deployment przed tym ćwiczeniem
+
+Sprawdź wolne CPU przed startem:
+```bash
+kubectl describe nodes | grep -A 3 "Allocated resources"
+# Szukaj (cpu %)  i  (cpu Limits %)
+```
+
+## Pliki
+
+- `priorityclasses.yaml` — 3 PriorityClass (high, normal, batch-low)
+- `high-priority-pod.yaml` — Pod `critical-payment` z PriorityClass `high`, dużym `requests.cpu`
+- `low-priority-deployment.yaml` — Deployment `batch-workers` z PriorityClass `batch-low`, wypełnia klaster
 
 ## Zadanie
 
-1. Stwórz PriorityClasses:
-   ```bash
-   kubectl apply -f priorityclasses.yaml
-   kubectl get priorityclass
-   ```
+Patrz [`task.md`](./task.md).
 
-2. Wypełnij klaster Podami best-effort (niski priorytet):
-   ```bash
-   kubectl apply -f low-priority-deployment.yaml
-   kubectl get pods -l tier=batch -o wide
-   # Powinno być kilka(naście) Podów na stanie Running
-   ```
+## Pytania kontrolne
 
-3. Sprawdź dostępne zasoby:
-   ```bash
-   kubectl describe nodes | grep -A 5 "Allocated resources"
-   ```
-
-4. Wdroż wysoko-priorytetowy Pod, który nie zmieści się bez wywłaszczenia:
-   ```bash
-   kubectl apply -f high-priority-pod.yaml
-   kubectl get events --sort-by='.lastTimestamp' | tail -20
-   # Spodziewane: "Preempted" event na low-priority Podzie
-   ```
-
-5. Zaobserwuj, że wysoko-priorytetowy Pod jest Running, a kilka low-priority zostało wyrzuconych.
-
-6. Sprzątnij:
-   ```bash
-   kubectl delete -f high-priority-pod.yaml -f low-priority-deployment.yaml -f priorityclasses.yaml
-   ```
-
+1. Co robi `globalDefault: true` w PriorityClass? Ile klas z tą flagą może być w klastrze?
+2. Co robi `preemptionPolicy: Never`? Kiedy chcesz używać?
+3. Priority vs QoS (D3/02) — dwa niezależne wymiary. Pod może być Guaranteed + low priority? BestEffort + high priority?
+4. Preemption a PodDisruptionBudget (D3/09) — czy PDB chroni przed preemption?
+5. **Bonus**: może się zdarzyć że klaster NIE wywłaszcza mimo high-priority Pod Pending? (Tak — patrz solution.)
 
 ## Linki
 - [Pod Priority and Preemption](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/)
 - [Non-preempting PriorityClass](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#non-preempting-priority-class)
+- [Preemption + PDB interaction (K8s 1.28+)](https://github.com/kubernetes/enhancements/tree/master/keps/sig-scheduling/4537-respect-pdb-in-preemption)

@@ -2,13 +2,13 @@ topology:
   nodePools:
     default:
       gpuProduct: Tesla-A100
-      gpuCount: 4
-      gpuMemory: 40                     # GB — typowa A100
+      gpuCount: 4                         # 4 fake GPU per node
+      gpuMemory: 40                       # GB — typowa A100 40GB
   mig:
     enabled: true
-    strategy: mixed                     # mixed | single | none
+    strategy: mixed                       # mixed | single | none
     profiles:
-      - name: 1g.5gb
+      - name: 1g.5gb                      # A100 40GB profile (dla 80GB użyj 1g.10gb)
         instances: 7
       - name: 3g.20gb
         instances: 2
@@ -21,6 +21,10 @@ device-plugin:
 status-updater:
   enabled: true
 status-exporter:
-  enabled: true                         # DCGM exporter mock
+  enabled: true                           # DCGM exporter mock
+
+# kwokDeployment: true = tworzy virtualne "kwok" node'y jako GPU-enabled (bez realnych K3d workers).
+# kwokDeployment: false = używa ISTNIEJĄCYCH K3d/Kind/K3s workers, dodaje im fake capacity.
+# Domyślnie FALSE — chcemy żeby prawdziwe agent nody miały GPU capacity (prostsze dla trainingu).
 kwokDeployment:
-  enabled: false                        # set true jeśli nie chcesz używać prawdziwych nodów K3d
+  enabled: false

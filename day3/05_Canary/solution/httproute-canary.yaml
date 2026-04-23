@@ -1,0 +1,22 @@
+# Weighted HTTPRoute — dwa backendRefs z polem `weight`.
+# Suma weight nie musi być 100; Envoy znormalizuje (u nas 70+30=100 dla czytelności).
+# Zmień wartości, re-apply, zobacz zmianę ruchu NATYCHMIAST (bez restartu Poda).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: canary-demo
+spec:
+  parentRefs:
+    - name: training-gateway     # Gateway z D2/07 (namespace default)
+  hostnames:
+    - canary.127-0-0-1.nip.io
+  rules:
+    - matches:
+        - path: { type: PathPrefix, value: / }
+      backendRefs:
+        - name: canary-app-v1
+          port: 80
+          weight: 70                # v1 (stable) — 70%
+        - name: canary-app-v2
+          port: 80
+          weight: 30                # v2 (canary) — 30%

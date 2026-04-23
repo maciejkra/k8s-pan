@@ -1,3 +1,6 @@
+# Demo kolejności zdarzeń w Pod: init → postStart → liveness/readiness → preStop → end.
+# Pisze timestamps do wspólnego volumu żeby można było odczytać porządek:
+#   kubectl exec lifecycle -- cat /loop/timing.txt
 apiVersion: v1
 kind: Pod
 metadata:
@@ -7,32 +10,33 @@ metadata:
 spec:
   initContainers:
   - name: init
-    image: busybox
-    command: ['sh', '-c', 'echo $(date +%s): INIT >> /loap/timing.txt']
+    image: busybox:1.37
+    command: ['sh', '-c', 'echo $(date +%s): INIT >> /loop/timing.txt']
     volumeMounts:
-    - mountPath: /loap
+    - mountPath: /loop
       name: timing
   containers:
   - name: main
-    image: busybox
-    command: ['sh', '-c', 'echo $(date +%s): START >> /loap/timing.txt; sleep 30; echo $(date +%s): END >> /loap/timing.txt;']
+    image: busybox:1.37
+    command: ['sh', '-c', 'echo $(date +%s): START >> /loop/timing.txt; sleep 3600']
     volumeMounts:
-    - mountPath: /loap
+    - mountPath: /loop
       name: timing
     livenessProbe:
       exec:
-        command: ['sh', '-c', 'echo $(date +%s): LIVENESS >> /loap/timing.txt']
+        command: ['sh', '-c', 'echo $(date +%s): LIVENESS >> /loop/timing.txt']
+      periodSeconds: 30
     readinessProbe:
       exec:
-        command: ['sh', '-c', 'echo $(date +%s): READINESS >> /loap/timing.txt']
+        command: ['sh', '-c', 'echo $(date +%s): READINESS >> /loop/timing.txt']
+      periodSeconds: 30
     lifecycle:
       postStart:
         exec:
-          command: ['sh', '-c', 'echo $(date +%s): POST-START >> /loap/timing.txt']
+          command: ['sh', '-c', 'echo $(date +%s): POST-START >> /loop/timing.txt']
       preStop:
         exec:
-          command: ['sh', '-c', 'echo $(date +%s): PRE-STOP >> /loap/timing.txt']
+          command: ['sh', '-c', 'echo $(date +%s): PRE-STOP >> /loop/timing.txt']
   volumes:
   - name: timing
-    hostPath:
-      path: /c/temp/
+    emptyDir: {}    # było hostPath /c/temp/ (Windows Git Bash) — emptyDir działa na każdym OS

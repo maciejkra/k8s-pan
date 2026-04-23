@@ -1,141 +1,119 @@
-# Install 3 CP + 3 worker nodes + LB
+# 03 — kubeadm walkthrough: 3 CP + 3 worker + kube-vip (HA) + Cilium CNI
 
-prepare the nodes and lunch `preapre.sh` on each of them - it will prepare the nodes for installation
+## Cel
+Postawić produkcyjny HA Kubernetes klaster **od zera** przy użyciu `kubeadm` na 6 wirtualkach (3 control-plane + 3 worker), z **kube-vip** jako wirtualnym LB dla API server i **Cilium** jako CNI (bez kube-proxy).
 
-## Prepare the first CP node
-Log in on to the node (ssh)
+## ⚠️ Zakres
 
-Add virtual IP for kube-vip
-```sh
-ip a a dev eth1 10.135.0.100/24
+To ćwiczenie **NIE DZIAŁA na K3d / Kind / K3s** — te dystrybucje mają już gotowe control-plane (nie kubeadm). Ćwiczenie wymaga **6 osobnych Linux VM** (Ubuntu 22.04 / 24.04 zalecane).
+
+Opcje infrastruktury:
+- **DigitalOcean / AWS / GCP**: 6 droplet/instance z Terraform (patrz `terraform/`).
+- **Multipass**: `multipass launch -n cpnode1 -c 2 -m 4G` × 6 (Mac/Linux).
+- **Vagrant**: VirtualBox/VMware VM-y (wolniejsze, ale darmowe).
+- **Bare-metal lab**: 6 Raspberry Pi / NUC (najbliższe prod).
+
+Minimum per VM: 2 CPU, 2 GB RAM, 20 GB disk.
+
+## Architektura
+
+```
+                        [ kubeapi.example.com → VIP 10.135.0.100 ]
+                                         ↑
+                        kube-vip leader election (Raft)
+                                         |
+          +--------------+---------------+---------------+
+          |                              |                           |
+  cpnode1 (10.135.0.5)         cpnode2 (10.135.0.7)     cpnode3 (10.135.0.3)
+     kube-apiserver                kube-apiserver            kube-apiserver
+     etcd                          etcd                      etcd
+     controller-manager            controller-manager        controller-manager
+     scheduler                     scheduler                 scheduler
+     kube-vip (static pod)         kube-vip (static pod)     kube-vip (static pod)
+          |                              |                           |
+  ========|==============================|===========================|=========
+                        Cilium CNI (kube-proxy replacement, eBPF)
+  ========|==============================|===========================|=========
+          |                              |                           |
+  knode1 (10.135.0.2)          knode2 (10.135.0.6)       knode3 (10.135.0.4)
+     kubelet                       kubelet                   kubelet
+     containerd                    containerd                containerd
+     Cilium agent                  Cilium agent              Cilium agent
 ```
 
-Copy files in `kubernetes` dir into `/etc/kubernetes`
+### Kluczowe decyzje
 
-Change the hostname
-```sh
-sudo hostnamectl set-hostname "cpnode1"
-```
-Modify `/etc/hosts` accordingly (add to the file)
-```sh
-10.135.0.5 cpnode1.example.com cpnode1
-10.135.0.6 cpnode2.example.com cpnode2
-10.135.0.3 cpnode3.example.com cpnode3
-10.135.0.4 knode1.example.com knode1
-10.135.0.2 knode2.example.com knode2
-10.135.0.7 knode3.example.com knode3
-10.135.0.100 kubeapi.example.com kubeapi
-```
+- **kube-vip jako static pod** (NIE DaemonSet) — standardowa metoda 2026. Start PRZED `kubeadm init` = VIP gotowy gdy apiserver podnosi się. DaemonSet wymaga RBAC i odpala się po kubeadm init.
+- **Cilium zastępuje kube-proxy** — `kubeadm init --skip-phases=addon/kube-proxy`. Cilium eBPF to szybsza i bardziej feature-rich implementacja.
+- **podSubnet /16** (nie /24) — minimum dla HA klastra (256 × /24 subnets per node).
+- **etcd stacked** (domyślnie kubeadm) — etcd na CP nodach. Dla 500+ nodes klaster rozważ **external etcd**.
 
+## Pliki w katalogu
 
-Modify the `kubeadm-config.yaml` file according to comments, especially:
-* advertiseAddress (add the interface ip)
-* certSANs (add the interface and virtual ip addresses)
+| Plik | Rola |
+|---|---|
+| `hosts` | Kopia `/etc/hosts` — mapowanie IP ↔ hostname dla 6 node + VIP. Wrzuć na każdy node. |
+| `kubeadm-config.yaml` | Config dla `kubeadm init` — k8s v1.34, podSubnet /16, audit, encryption |
+| `kube-vip-static-pod.yaml` | Manifest static pod kube-vip (v1.0.4) — edytuj VIP_IF i address |
+| `prepare.sh` | Skrypt setup node-a (containerd + k8s 1.34 packages + sysctl) |
+| `kubernetes/audit-policy.yaml` | K8s audit policy (per-pod events) |
+| `kubernetes/enc.yaml` | Encryption-at-rest dla etcd Secrets |
+| `terraform/` | Opcjonalny provisioning na DigitalOcean (6 droplets) |
 
-Install kubernetes components
-```sh
-kubeadm init --config ./kubeadm-config.yaml --upload-certs
-```
+## Zadanie
 
-**Save the output `kubeadm join` commands**
+Patrz [`task.md`](./task.md).
 
-Install Network driver - Cilium
-https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/
+## Testing approaches
 
-```sh
-CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
-CLI_ARCH=amd64
-if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
-curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
-sha256sum --check cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
-sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
-rm cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
+**Jak przetestować że ten walkthrough działa?** Maciek sugeruje:
 
+1. **Multipass (szybkie, Mac/Linux)** — ~5 minut setup:
+   ```bash
+   for name in cpnode{1,2,3} knode{1,2,3}; do
+     multipass launch -n $name -c 2 -m 4G --disk 20G 24.04
+   done
+   # Następnie po `multipass shell cpnode1` odpalasz prepare.sh + kubeadm init
+   ```
 
-export KUBECONFIG=/etc/kubernetes/admin.conf
-cilium install --version 1.17.6
-```
+2. **Vagrant (Linux/Windows)**:
+   ```bash
+   # Vagrantfile z 6 box-ami ubuntu/jammy64
+   vagrant up --provider=virtualbox
+   ```
 
-## Join other CP nodes
-Log in on to the node (ssh)
+3. **DigitalOcean przez Terraform** (~$30 za 24h testu):
+   ```bash
+   cd terraform/
+   terraform apply -var="do_token=$DO_TOKEN"
+   ```
 
-Copy files in `kubernetes` dir into `/etc/kubernetes`
+4. **Weryfikacja**:
+   ```bash
+   # Na cpnode1 po pełnym installu:
+   kubectl get nodes
+   # NAME      STATUS   ROLES           VERSION
+   # cpnode1   Ready    control-plane   v1.34.0
+   # cpnode2   Ready    control-plane   v1.34.0
+   # cpnode3   Ready    control-plane   v1.34.0
+   # knode1    Ready    <none>          v1.34.0
+   # knode2    Ready    <none>          v1.34.0
+   # knode3    Ready    <none>          v1.34.0
 
-Change the hostname
-```sh
-sudo hostnamectl set-hostname "<nodename>"
-```
-Modify `/etc/hosts` accordingly (add to the file)
-```sh
-10.135.0.5 cpnode1.example.com cpnode1
-10.135.0.6 cpnode2.example.com cpnode2
-10.135.0.3 cpnode3.example.com cpnode3
-10.135.0.4 knode1.example.com knode1
-10.135.0.2 knode2.example.com knode2
-10.135.0.7 knode3.example.com knode3
-10.135.0.100 kubeapi.example.com kubeapi
-```
-Run `kubeadm join` command you got from the first node
-```sh
-kubeadm join kubeapi.example.com:6443 --token 7kwnu1.zmop3tuysdmdwrhv \
-	--discovery-token-ca-cert-hash sha256:a30106570559692815bfdd008026ac0a36a91f4f997a1b563cd0995a49693dd8 \
-	--control-plane --certificate-key ead587109844cced6cdbda7743c080571e370f6061be3a7d08753f9185deee07
-```
+   # Cilium health
+   cilium status --wait
+   # kube-vip leader
+   kubectl get leases -n kube-system plndr-cp-lock
 
-## Join worker nodes
-Log in on to the node (ssh)
+   # Failover test — wyłącz leadership cpnode
+   multipass stop $(kubectl get leases -n kube-system plndr-cp-lock -o jsonpath='{.spec.holderIdentity}')
+   # kubectl cały czas działa (VIP przepadł na kolejny CP)
+   ```
 
-
-Change the hostname
-```sh
-sudo hostnamectl set-hostname "<nodename>"
-```
-Modify `/etc/hosts` accordingly (add to the file)
-```sh
-10.135.0.5 cpnode1.example.com cpnode1
-10.135.0.6 cpnode2.example.com cpnode2
-10.135.0.3 cpnode3.example.com cpnode3
-10.135.0.4 knode1.example.com knode1
-10.135.0.2 knode2.example.com knode2
-10.135.0.7 knode3.example.com knode3
-10.135.0.100 kubeapi.example.com kubeapi
-```
-Run `kubeadm join` command **for worker** you got from the first node
-```sh
-kubeadm join kubeapi.example.com:6443 --token eiicj4.9ybifdjxw6bcn6g7 \
-	--discovery-token-ca-cert-hash sha256:e8ad7cccfb8fe12c81db99b1e94e0d40ef83494b5064796043fdef476b801d90
-```
-
-## Install kube-vip
-https://kube-vip.io
-
-Remove virtual IP for kube-vip
-```sh
-ip a d dev eth1 10.135.0.100/24
-```
-
-On one control-plane node run `kube-vip.sh` script (edit first `VIP_IF` & `VIP_IP`).
-
-Have FUN!
-
-## More fun....
-
-```sh
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm repo update
-
-helm install ingress-nginx ingress-nginx/ingress-nginx \
-  --namespace ingress-nginx --create-namespace \
-  --set controller.kind=DaemonSet \
-  --set controller.daemonset.useHostPort=true \
-  --set controller.hostNetwork=true \
-  --set controller.service.type="" \
-  --set controller.service.enabled=false \
-  --set controller.admissionWebhooks.enabled=false \
-  --set controller.extraArgs.enable-ssl-passthrough="" \
-  --set controller.nodeSelector."node-role\.kubernetes\.io/control-plane"="" \
-  --set controller.tolerations\[0\].key="node-role.kubernetes.io/control-plane" \
-  --set controller.tolerations\[0\].operator="Exists" \
-  --set controller.tolerations\[0\].effect="NoSchedule"
-```
-
+## Linki
+- [kubeadm install (oficjalne)](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
+- [kube-vip docs](https://kube-vip.io/)
+- [kube-vip static pod guide](https://kube-vip.io/docs/installation/static/)
+- [Cilium install](https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/)
+- [Cilium kube-proxy replacement](https://docs.cilium.io/en/stable/network/kubernetes/kubeproxy-free/)
+- [kubeadm-config v1beta4 spec](https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta4/)

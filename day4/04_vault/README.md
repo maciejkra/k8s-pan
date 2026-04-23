@@ -1,86 +1,58 @@
-## Secrets from helm
+# 04 — HashiCorp Vault (3 wzorce konsumpcji secretów)
 
-```sh
-helm repo add hashicorp https://helm.releases.hashicorp.com
+## Cel
+Zainstalować Vault w trybie dev, skonfigurować auth Kubernetes + policy + role, i zobaczyć **trzy wzorce** konsumpcji secretów w Podzie:
 
-helm upgrade --install vault hashicorp/vault --version 0.24.1 \
---create-namespace -n vault \
--f vault-values.yaml
-```
+1. **CSI Secrets Store** → pliki w volume (`/mnt/secrets-store/db-password`)
+2. **CSI + sync do K8s Secret** → env var przez `valueFrom.secretKeyRef`
+3. **Vault Agent Injector** → sidecar renderuje plik z template (`/vault/secrets/database-config.txt`)
 
-Install CSI controller
+Plus omówienie **External Secrets Operator (ESO)** jako cloud-native alternatywy.
 
-```sh
-helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
+## Kontekst
 
-helm upgrade --install csi-secrets-store \
-secrets-store-csi-driver/secrets-store-csi-driver \
--n kube-system --set syncSecret.enabled=true
-```
+K8s Secrets (D2/10) = base64 w etcd. W produkcji:
+- **Dynamic secrets** (DB credentials rotowane co 24h) — wymagają external manager.
+- **Audit logów** ("kto czytał secret X w grudniu") — K8s tylko pokazuje kto miał RBAC, nie kto faktycznie odczytał.
+- **Encryption at rest niezależne od etcd** — klucz w KMS/HSM, nie na kube-apiserver node.
 
-Turn on k8s engine in vault (enter the pod)
-```sh
-kubectl exec -it -n vault vault-0 -- sh
+Vault adresuje wszystkie trzy + oferuje PKI, transit encryption, SSH CA, Cubbyhole.
 
+### Kiedy Vault vs ESO?
 
-vault auth enable kubernetes
+| | Vault | External Secrets Operator (ESO) |
+|---|---|---|
+| Backend | Vault (self-hosted) | AWS SM / GCP SM / Azure KV / **Vault** / 1Password / … |
+| Pod konsumpcja | Sidecar injector / CSI volume / CSI env | `envFrom: secretRef` (ESO syncuje do natywnego K8s Secret) |
+| Dynamic secrets | Native (DB, PKI, SSH) | Read-only z backendu; brak dynamic |
+| Audit | Bogaty (per-request log) | Brak (tylko AWS CloudTrail etc.) |
+| Złożoność | Wysoka (init, unseal, HA) | Niska (operator + CRD) |
+| Produkcja 2026 | Enterprise / multi-cloud — klasyka | Cloud-native single-cloud — de-facto standard |
 
-vault write auth/kubernetes/config \
-kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443"
-```
+**Decyzja w pigułce**: ESO dla 80% cloud-native use cases, Vault dla PKI/dynamic/multi-DC enterprise.
 
-Set up policy to access via password
-```sh
-vault policy write internal-app - <<EOF
-path "secret/data/db-pass" {
-capabilities = ["read"]
-}
-EOF
-```
+## Prereqs
+- K3s / Kind / K3d cluster
+- `helm` CLI
 
-Create role that connects policy with service account
+## Pliki
 
-```sh
-vault write auth/kubernetes/role/database \
-bound_service_account_names=app-sa \
-bound_service_account_namespaces=default \
-policies=internal-app \
-ttl=20m
+| Plik | Co |
+|---|---|
+| `vault-values.yaml` | Helm values dla Vault dev mode |
+| `csisecret.yaml` | SecretProviderClass `vault-database` (CSI volume) |
+| `csisecret-env.yaml` | SecretProviderClass `vault-database-env` (CSI + sync do K8s Secret) |
+| `csi-pod.yaml` | Pod konsumujący CSI volume |
+| `csi-pod-env.yaml` | Pod konsumujący sync'ed Secret jako env |
+| `inject-pod.yaml` | Pod z annotacjami Agent Injector |
 
-exit
-```
+## Zadanie
 
-```sh
-kubectl port-forward -n vault vault-0 8200
-```
-Create secret called `db-pass` and create key `password`
-http://127.0.0.1:8200 (login `root`)
+Patrz [`task.md`](./task.md).
 
-### Secrets as values using CSI
-
-```sh
-kubectl apply -f csisecret.yaml 
-kubectl apply -f csi-pod.yaml
-```
-Enter the new pod and check password.
-
-Check if there are any secrets
-
-### Secrets as envs using CSI
-```sh
-kubectl apply -f csisecret-env.yaml 
-kubectl apply -f csi-pod-env.yaml
-```
-Enter the new pod and check password.
-Check if there are any secrets.
-Check what happens after you delete the secret.
-
-### Secrets as envs using inject (classic)
-```sh
-kubectl apply -f inject-pod.yaml
-```
-Enter the new pod and check this path `/vault/secrets/database-config.txt`
-
-# Alternatives to vault apporach:
-* https://github.com/getsops/sops
-* https://github.com/bitnami-labs/sealed-secrets
+## Linki
+- [Vault Helm chart](https://github.com/hashicorp/vault-helm)
+- [Secrets Store CSI Driver](https://secrets-store-csi-driver.sigs.k8s.io/)
+- [Vault Agent Injector](https://developer.hashicorp.com/vault/docs/platform/k8s/injector)
+- [External Secrets Operator](https://external-secrets.io/)
+- [Vault Kubernetes auth](https://developer.hashicorp.com/vault/docs/auth/kubernetes)

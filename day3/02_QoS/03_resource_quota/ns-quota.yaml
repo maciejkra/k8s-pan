@@ -1,8 +1,45 @@
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-1
+---
+# ResourceQuota — sumaryczne limity na namespace.
+apiVersion: v1
 kind: ResourceQuota
 metadata:
-  name: object-counts
+  name: team-quota
   namespace: test-1
 spec:
   hard:
-    pods: "1"
+    # Object counts
+    pods: "10"
+    services: "5"
+    persistentvolumeclaims: "4"
+    # Compute resources (suma wszystkich Podów w NS)
+    requests.cpu: "2"
+    requests.memory: "4Gi"
+    limits.cpu: "4"
+    limits.memory: "8Gi"
+---
+# LimitRange — defaulty i zakresy per Pod/container.
+# Razem z ResourceQuota zabezpieczają: quota ogranicza SUMĘ, limitrange ogranicza POJEDYNCZY Pod.
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: test-1
+spec:
+  limits:
+    - type: Container
+      default:            # wstrzykuje limits jeśli brak
+        cpu: 200m
+        memory: 256Mi
+      defaultRequest:     # wstrzykuje requests jeśli brak
+        cpu: 100m
+        memory: 128Mi
+      min:
+        cpu: 50m
+        memory: 64Mi
+      max:
+        cpu: 1
+        memory: 1Gi

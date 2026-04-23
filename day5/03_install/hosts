@@ -4,4 +4,4 @@
 10.135.0.2 knode1.example.com knode1
 10.135.0.6 knode2.example.com knode2
 10.135.0.4 knode3.example.com knode3
-164.90.241.25 kubeapi.example.com kubeapi
+10.135.0.100 kubeapi.example.com kubeapi

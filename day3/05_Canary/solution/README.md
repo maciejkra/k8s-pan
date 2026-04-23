@@ -1,41 +1,107 @@
-# Solution — Canary deployment z PVC
+# Solution — 05_Canary
 
-## Cel
-Rozwiązanie task z [`../README.md`](../README.md): Canary release z dwoma deploymentami i PVC.
+## Architektura
+
+```
+       Client
+         │  curl canary.127-0-0-1.nip.io
+         ▼
+   [Envoy Gateway]  (D2/07 training-gateway)
+         │
+         ▼
+   [HTTPRoute canary-demo]  ← weighted routing 70/30
+         ├──70%──→ Service canary-app-v1 ──→ 2× Pod pkad:blue
+         └──30%──→ Service canary-app-v2 ──→ 1× Pod pkad:green
+```
 
 ## Pliki
 
-- `old-canary.deployment.yaml` — stara wersja (production)
-- `canary.deployment.yaml` — nowa wersja (canary, np. 30% ruchu)
-- `pvc.yaml` — PVC współdzielone między starą a nową wersją (jeśli wymaga shared state)
+- `deployment-v1.yaml` — v1 Deployment + Service (2 repliki, pkad:blue)
+- `deployment-v2.yaml` — v2 Deployment + Service (1 replika, pkad:green)
+- `httproute-canary.yaml` — HTTPRoute z `backendRefs[].weight` 70/30
 
-## Krok po kroku
+Kluczowe różnice vs poprzednie podejście (PVC + 2 Deployment na wspólnym Service):
 
-1. Zaaplikuj PVC:
-   ```bash
-   kubectl apply -f pvc.yaml
-   ```
+| | Stare (service selector) | Nowe (weighted HTTPRoute) |
+|---|---|---|
+| Sterowanie ratio | `replicas v1=7, v2=3` → ratio pod/pod | `weight: 70/30` w HTTPRoute |
+| Granularność | tylko liczba replik całkowita (1% = 1/100 replik = 100 Pod-ów) | dowolna % (HTTPRoute weight to int) |
+| Cross-version config | trudny (ten sam Service) | łatwy (osobne Service) |
+| Header/cookie routing | niemożliwe | możliwe (dodać `matches.headers` do jednej rule) |
+| Gdy `replicas: 0` | 100% ruchu na drugi | ruch nadal idzie — 5xx z upstream → Gateway retry |
 
-2. Zaaplikuj starą wersję (100% ruchu na początku):
-   ```bash
-   kubectl apply -f old-canary.deployment.yaml
-   ```
+## Apply
 
-3. Zaaplikuj canary (np. 1 replikę, podczas gdy stara ma 9 → automatycznie ~10% ruchu na canary jeśli Service używa label selector matchującego oba):
-   ```bash
-   kubectl apply -f canary.deployment.yaml
-   ```
+```bash
+# (Gateway training-gateway z D2/07 musi istnieć i być Programmed)
+kubectl apply -f deployment-v1.yaml
+kubectl apply -f deployment-v2.yaml
+kubectl wait --for=condition=ready pod -l app=canary-app --timeout=60s
 
-4. Test:
-   ```bash
-   for i in {1..100}; do curl -s http://<service>/version; echo; done | sort | uniq -c
-   ```
+kubectl apply -f httproute-canary.yaml
+sleep 5   # Envoy program config
+```
 
-5. Stopniowo zwiększaj canary replicas (1 → 2 → 5 → 10) i zmniejszaj old → 0.
+## Walidacja
 
-## Kluczowe punkty
+```bash
+# 100 requestów, policzmy rozkład
+for i in $(seq 1 100); do
+  curl -s canary.127-0-0-1.nip.io | grep -oE 'blue|green'
+done | sort | uniq -c
+# Spodziewane: ~70 blue, ~30 green (±5% statystyczna zmienność)
+```
 
-- Canary i prod używają **tego samego Service** (selector `app=myapp`), różnią się labelem `version` (v1 / v2)
-- Procent ruchu = liczba replik / total
-- Dla precyzyjnego routingu (10%, 30%, 50%) używaj **HTTPRoute weighted routing** (Gateway API) lub **Argo Rollouts** (cross-link D3/05 strategies.md)
-- PVC `accessModes: ReadWriteMany` jeśli oba deployments mają pisać; `ReadWriteOnce` + canary NA TYM SAMYM NODE jeśli pojedynczy reader
+## Rolling the canary forward
+
+Progresywne zwiększanie weight v2:
+
+```bash
+# 50/50
+kubectl patch httproute canary-demo --type=json -p='[
+  {"op":"replace","path":"/spec/rules/0/backendRefs/0/weight","value":50},
+  {"op":"replace","path":"/spec/rules/0/backendRefs/1/weight","value":50}
+]'
+
+# 20/80 (v2 dominuje)
+kubectl patch httproute canary-demo --type=json -p='[
+  {"op":"replace","path":"/spec/rules/0/backendRefs/0/weight","value":20},
+  {"op":"replace","path":"/spec/rules/0/backendRefs/1/weight","value":80}
+]'
+
+# 100% v2 (canary promoted do stable)
+kubectl patch httproute canary-demo --type=json -p='[
+  {"op":"replace","path":"/spec/rules/0/backendRefs/0/weight","value":0},
+  {"op":"replace","path":"/spec/rules/0/backendRefs/1/weight","value":100}
+]'
+
+# Po tygodniu stabilności: zmień v2 → v1 (nowy canary mo będzie v3) i usuń stary Deployment
+```
+
+W produkcji **Argo Rollouts** albo **Flagger** robi to automatycznie — monitoruje SLO (error rate, latency) między krokami i rolluje wstecz jeśli threshold przekroczony. Bez automatyki: ręczny workflow musi być dokumentowany (runbook per zespół).
+
+## Header-based canary (preview)
+
+Chcesz że tylko **Twój team** dostaje canary? Dodaj header match na wszystkie 100% v2:
+
+```yaml
+rules:
+  - matches:
+      - headers:
+          - name: x-canary-tester
+            value: "true"
+    backendRefs:
+      - name: canary-app-v2
+        port: 80
+  - matches:
+      - path: { type: PathPrefix, value: / }
+    backendRefs:
+      - name: canary-app-v1
+        port: 80
+```
+
+Test:
+```bash
+curl -H "x-canary-tester: true" canary.127-0-0-1.nip.io   # zawsze green
+curl canary.127-0-0-1.nip.io                              # zawsze blue
+```

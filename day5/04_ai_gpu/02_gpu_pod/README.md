@@ -8,6 +8,7 @@ Wdrożyć Pod żądający 1 GPU, zaobserwować scheduling decision i jak Allocat
 1. Wdroż:
    ```bash
    kubectl apply -f pod.yaml
+   kubectl wait --for=condition=ready pod/gpu-workload --timeout=30s
    ```
 
 2. Sprawdź placement:
@@ -20,7 +21,7 @@ Wdrożyć Pod żądający 1 GPU, zaobserwować scheduling decision i jak Allocat
    NODE=$(kubectl get pod gpu-workload -o jsonpath='{.spec.nodeName}')
    kubectl describe node $NODE | grep -A 8 "Allocated resources"
    # Allocated resources:
-   #   nvidia.com/gpu  1  4
+   #   nvidia.com/gpu  1  4       # 1/4 allocated na node
    ```
 
 4. Wdroż 4 dodatkowe Pody:
@@ -31,15 +32,30 @@ Wdrożyć Pod żądający 1 GPU, zaobserwować scheduling decision i jak Allocat
    kubectl get pods
    ```
 
-5. 5-ty Pod nie zmieści się (4 GPU per node × 2 nody = 8 GPU; 1 + 4 = 5; dwie repliki zmieszczą się na drugim node, ale jeśli zostały tylko 3 — Pending):
-   Sprawdź `kubectl describe pod gpu-workload-X | grep -A 5 Events:` jeśli któryś jest Pending.
+5. Zobacz rozkład:
+   ```bash
+   # W topology.yaml: 4 GPU per node. Z 2 worker nodami = 8 GPU total.
+   # 1 oryginalny + 4 dodatkowe = 5 Podów × 1 GPU = 5 GPU zajęte z 8.
+   # Scheduler rozkłada automatycznie między nody.
+   kubectl get pods -l app=gpu-test -o wide
+   ```
 
-6. Sprzątnij:
+6. **Eksperyment**: dorzuć do 10 Pod-ów. 8 powinno się umieścić, 2 Pending:
+   ```bash
+   for i in {5..10}; do
+     sed "s/gpu-workload/gpu-workload-$i/" pod.yaml | kubectl apply -f -
+   done
+   kubectl get pods -l app=gpu-test
+   # Część Running, część Pending (Insufficient nvidia.com/gpu)
+   ```
+
+7. Sprzątnij:
    ```bash
    kubectl delete pod -l app=gpu-test
    ```
 
 ## Pytania kontrolne
-1. Czemu `requests` i `limits` MUSZĄ być takie same dla `nvidia.com/gpu`?
+1. Czemu `requests` i `limits` MUSZĄ być takie same dla `nvidia.com/gpu`? (Hint: extended resources nie wspierają overcommit.)
 2. Co się stanie jeśli zażądasz `nvidia.com/gpu: 8` (więcej niż jeden node ma)?
-3. Jak rozprasować GPU workload równomiernie po nodach? (Hint: topologySpreadConstraints)
+3. Jak rozprasować GPU workload równomiernie po nodach? (Hint: topologySpreadConstraints z D3/06/03.)
+4. **Bonus**: MIG z D5/04/04 — jak to zmienia kalkulację "ile GPU dostępne"?

@@ -1,0 +1,18 @@
+# Bare Pod w restricted NS — BEZ securityContext, celowo naruszający PSA:
+# - brak runAsNonRoot
+# - brak seccompProfile
+# - brak capabilities drop
+# - nginx image domyślnie root → runAsNonRoot violation
+#
+# Apply zwróci natychmiast: "pods 'bad-pod' is forbidden: violates PodSecurity 'restricted:latest'"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-pod
+  namespace: psa-restricted
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.27-alpine
+    ports:
+    - containerPort: 80

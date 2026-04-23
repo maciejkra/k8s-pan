@@ -1,0 +1,27 @@
+# Mutation ConstraintTemplate — auto-dodaje label `owner=unknown` jeśli Pod go nie ma.
+# Pokazuje DRUGĄ stronę Gatekeeper: nie tylko "reject", ale też "fix automatically".
+#
+# Uwaga: Mutation wymaga osobnego feature gate przy install Gatekeeper:
+#   helm install ... --set controllerManager.logLevel=INFO \
+#                    --set enableMutation=true
+#
+# Bez tego "kind: AssignMetadata" nie zostanie zaakceptowane przez webhook.
+apiVersion: mutations.gatekeeper.sh/v1
+kind: AssignMetadata
+metadata:
+  name: set-default-owner-label
+spec:
+  match:
+    scope: Namespaced
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    excludedNamespaces: ["kube-system", "gatekeeper-system"]
+  location: "metadata.labels.owner"
+  parameters:
+    assign:
+      value: "unknown"
+    pathTests:
+      # Tylko jeśli label `owner` NIE istnieje — nie nadpisujemy istniejących
+      - subPath: "metadata.labels.owner"
+        condition: MustNotExist

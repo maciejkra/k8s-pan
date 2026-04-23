@@ -19,35 +19,17 @@ K8s przypisuje Pod do **QoS class**:
 W produkcji: **Guaranteed dla critical** (DB, payment), **Burstable dla większości aplikacji** (typowy web), **BestEffort tylko batch/dev**.
 
 ## Prereqs
-- K3d/Kind cluster
+- K3s / Kind / K3d cluster
+
+## Pliki
+
+- `pod-guaranteed.yaml` — requests=limits (100m CPU, 200Mi RAM)
+- `pod-burstable.yaml` — requests<limits (50m-200m CPU, 100-400Mi RAM)
+- `pod-besteffort.yaml` — brak resources w ogóle
 
 ## Zadanie
 
-1. Wdroż 3 Pody różnych QoS class (manifest w katalogu).
-
-2. Sprawdź klasy:
-   ```bash
-   kubectl get pods -o json | jq '.items[] | {name: .metadata.name, qos: .status.qosClass}'
-   ```
-
-3. Symuluj memory pressure — Pod prosi o więcej niż limit:
-   ```bash
-   kubectl exec <burstable-pod> -- sh -c "yes 'A' | head -c 1G > /dev/null"
-   # OOM jeśli przekroczy limit
-   kubectl get pod <burstable-pod>
-   # OOMKilled
-   ```
-
-4. Sprawdź events:
-   ```bash
-   kubectl describe pod <killed-pod> | tail -20
-   ```
-
-## Pytania kontrolne
-1. CPU throttling vs memory OOM — czemu różnica w reakcji?
-2. Co jeśli klaster ma 8 CPU a Pod ma `requests.cpu: 16`? (Pending na zawsze)
-3. Dlaczego `Guaranteed` dla critical workloads?
-4. Co jeśli wszystkie Pody są BestEffort i pojawi się node pressure?
+Patrz [`task.md`](./task.md).
 
 ## Linki
 - [Configure QoS for Pods](https://kubernetes.io/docs/tasks/configure-pod-container/quality-service-pod/)

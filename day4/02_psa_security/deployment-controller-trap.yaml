@@ -1,0 +1,25 @@
+# Controller-level trap — kluczowy efekt PSA który często umyka.
+# Deployment sam NIE jest Podem, więc admission na Deployment PRZECHODZI.
+# Ale ReplicaSet próbuje tworzyć Pody → te Pody są sprawdzane przez PSA → odrzucane.
+# Skutek: Deployment status "0/3 ready", ReplicaSet events pełen "violates PodSecurity".
+#
+# Typowy scenariusz w produkcji: dev robi kubectl apply -f deploy.yaml, patrzy na apply
+# output (zielony), nie widzi że Pody w ogóle nie wstają. Debuguje 30 minut.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trap
+  namespace: psa-restricted
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: trap
+  template:
+    metadata:
+      labels:
+        app: trap
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.27-alpine     # root domyślnie → enforce restricted zablokuje

@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: redis-servcie
+  name: redis-service
   labels:
     szkolenie: k8s
 spec:

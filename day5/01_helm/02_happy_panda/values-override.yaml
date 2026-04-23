@@ -1,0 +1,34 @@
+# Przykładowy plik values override dla Bitnami WordPress.
+# Używać: helm upgrade --install my-release oci://... -f values-override.yaml
+#
+# UWAGA: od sierpnia 2025 Bitnami zmieniło politykę — część obrazów może wymagać
+# subskrypcji "Bitnami Secure Images". Testuj najpierw z `helm show values`.
+
+wordpressUsername: admin
+wordpressPassword: "change-me-strong-password"
+wordpressEmail: "admin@example.com"
+wordpressBlogName: "Workshop K8s 2026"
+
+service:
+  type: ClusterIP   # zamiast LoadBalancer (Kind wymaga MetalLB)
+
+persistence:
+  enabled: true
+  size: 1Gi
+
+# MariaDB subchart
+mariadb:
+  auth:
+    rootPassword: "mariadb-root-pw"
+    password: "mariadb-user-pw"
+  primary:
+    persistence:
+      size: 1Gi
+
+# Resources — dostosuj do rozmiaru klastra
+resources:
+  requests:
+    memory: 256Mi
+    cpu: 100m
+  limits:
+    memory: 512Mi

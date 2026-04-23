@@ -1,10 +1,10 @@
 # 01 — Debug Pod (ephemeral containers, kubectl debug)
 
 ## Cel
-Zdebugować aplikację działającą w **distroless** / scratch image (bez shell, bez tcpdump, bez nicze). Użyć `kubectl debug` z ephemeral container i `--copy-to`.
+Zdebugować aplikację działającą w **distroless** / scratch image (bez shell, bez tcpdump, bez niczego). Użyć `kubectl debug` z ephemeral container i `--copy-to`.
 
 ## Kontekst
-W produkcji obrazy distroless / scratch (D1/06 hardening) **nie mają shella**. To dobre dla bezpieczeństwa, ale frustrujące przy debugowaniu (`kubectl exec -it pod -- sh` → nie ma `sh`).
+W produkcji obrazy distroless / scratch (D1/02 hardening) **nie mają shella**. To dobre dla bezpieczeństwa, ale frustrujące przy debugowaniu (`kubectl exec -it pod -- sh` → nie ma `sh`).
 
 Dwa rozwiązania `kubectl debug`:
 
@@ -16,42 +16,27 @@ Dwa rozwiązania `kubectl debug`:
    - Potrzebujesz aktywnie debugować (uruchomić nowy proces zamiast main)
    - Chcesz inny SecurityContext (np. dodać CAP_SYS_PTRACE)
 
+### Debug profile (K8s 1.30+)
+
+`kubectl debug --profile=<name>` — predefined SecurityContext modifications dla typowych przypadków:
+- **general** (default) — minimalne zmiany
+- **baseline** — drop capabilities, non-root
+- **restricted** — PSA-restricted compatible
+- **netadmin** — CAP_NET_ADMIN + CAP_NET_RAW (dla tcpdump)
+- **sysadmin** — pełne capabilities (tylko admin-level debug)
+
 ## Prereqs
-- K3d/Kind cluster
+- K3s / Kind / K3d cluster z K8s ≥1.25 (ephemeral containers stable)
+
+## Pliki
+
+- `scratch-deployment.yaml` — Deployment z distroless image + Service
 
 ## Zadanie
 
-1. Wdroż celowo distroless deployment:
-   ```bash
-   kubectl apply -f scretch-deployment.yaml
-   POD=$(kubectl get pods -l app=scretch -o jsonpath='{.items[0].metadata.name}')
-   ```
-
-2. Spróbuj klasycznie:
-   ```bash
-   kubectl exec -it "$POD" -- sh
-   # error: exec: "sh": executable file not found in $PATH
-   ```
-
-3. **Opcja 1: ephemeral container** (network-shared sidecar):
-   ```bash
-   kubectl debug -it "$POD" --image=nicolaka/netshoot -- tcpdump -n port 8080
-   # Widzimy ruch HTTP do main containera
-   ```
-
-4. **Opcja 2: copy-to** (klon z innym image):
-   ```bash
-   kubectl debug -it "$POD" --image=ubuntu --share-processes --copy-to=myapp-debug
-   # Tworzy nowy Pod 'myapp-debug' z ubuntu jako image, ale tymi samymi volumes/env
-   # Możemy "widzieć" procesy oryginału przez --share-processes
-   ```
-
-5. Sprzątnij debug klon:
-   ```bash
-   kubectl delete pod myapp-debug
-   ```
-
+Patrz [`task.md`](./task.md).
 
 ## Linki
 - [Debug Running Pod](https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/#ephemeral-container)
 - [nicolaka/netshoot](https://github.com/nicolaka/netshoot) — popularny debug image z mnóstwem narzędzi sieciowych
+- [kubectl debug profiles](https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/#debugging-with-a-copy-of-the-pod-while-changing-its-command)
