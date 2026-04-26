@@ -57,7 +57,7 @@ Spodziewany alert w logu Falco:
 
 ```bash
 # Pod nadal żyje z poprzedniego kroku
-kubectl exec -it innocent-app -- sh -c "echo malicious >> /etc/passwd"
+kubectl exec innocent-app -- sh -c "echo malicious >> /etc/passwd"
 
 # Sprawdź logi Falco
 kubectl logs -n falco -l app.kubernetes.io/name=falco --tail=20 | grep -i "Custom rule"
@@ -65,17 +65,23 @@ kubectl logs -n falco -l app.kubernetes.io/name=falco --tail=20 | grep -i "Custo
 
 Spodziewane:
 ```
-{"output":"Custom rule: zapis do /etc wewnątrz kontenera (user=root file=/etc/passwd proc=sh container=app image=alpine)","priority":"Warning","rule":"Custom - Write to /etc",...}
+... Warning Custom rule: zapis do /etc wewnątrz kontenera (user=root file=/etc/passwd proc=sh container=app ...)
 ```
+
+> **macOS Apple Silicon / Docker Desktop:** Część 3 może nie firować — LinuxKit kernel ma uszkodzone tracepointy BPF dla `open`/`creat`, więc Falco nie wykrywa zapisu do plików (nawet wbudowane reguły plikowe nie działają). Reguły **sieciowe** (Część 4) firują normalnie. Na Linuxie / EC2 / WSL2 — Część 3 działa.
 
 ## Część 4 — Trigger drugiej custom rule (connect 4444)
 
+Alpine 3.19 ma busybox `nc` natywnie — bez `apk add`:
+
 ```bash
-# Alpine nie ma netcat - install albo użyj innej apki:
-kubectl exec -it innocent-app -- sh -c "apk add -q netcat-openbsd && nc -v 192.0.2.1 4444 -w 1 || true"
+kubectl exec innocent-app -- sh -c "nc -w 2 192.0.2.5 4444 || true"
 ```
 
-Logi Falco powinny pokazać custom rule "Outbound connection to suspicious port".
+Spodziewane w logach Falco:
+```
+... Critical Podejrzane wyjście TCP na port 4444 (container=app dest=192.0.2.5) ...
+```
 
 ## Część 5 — Integracja z Slack przez Falcosidekick (bonus)
 

@@ -1,11 +1,12 @@
-# Mutation ConstraintTemplate — auto-dodaje label `owner=unknown` jeśli Pod go nie ma.
+# Mutation: auto-dodaje label `owner=unknown` jeśli Pod go nie ma.
 # Pokazuje DRUGĄ stronę Gatekeeper: nie tylko "reject", ale też "fix automatically".
 #
-# Uwaga: Mutation wymaga osobnego feature gate przy install Gatekeeper:
-#   helm install ... --set controllerManager.logLevel=INFO \
-#                    --set enableMutation=true
+# Wymaga przy install Gatekeeper:
+#   helm install ... --set enableMutation=true
 #
-# Bez tego "kind: AssignMetadata" nie zostanie zaakceptowane przez webhook.
+# AssignMetadata z założenia NIE nadpisuje istniejących labeli — to wbudowane
+# zachowanie (od Gatekeeper 3.7+), bez `pathTests`. Dla pól innych niż metadata
+# (np. spec.containers...) używaj `Assign` z explicit `pathTests`.
 apiVersion: mutations.gatekeeper.sh/v1
 kind: AssignMetadata
 metadata:
@@ -21,7 +22,3 @@ spec:
   parameters:
     assign:
       value: "unknown"
-    pathTests:
-      # Tylko jeśli label `owner` NIE istnieje — nie nadpisujemy istniejących
-      - subPath: "metadata.labels.owner"
-        condition: MustNotExist
