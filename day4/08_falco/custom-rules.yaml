@@ -23,8 +23,7 @@
   condition: >
     evt.type in (connect, sendto)
     and fd.l4proto=tcp
-    and fd.sport != 0
-    and fd.dport = 4444
+    and fd.sport=4444
     and container
   output: >
     Podejrzane wyjście TCP na port 4444 (container=%container.name dest=%fd.rip)
