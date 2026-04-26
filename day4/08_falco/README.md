@@ -24,11 +24,14 @@ Output: structured logs (JSON) → SIEM (Splunk, Datadog, Elastic) lub **Falcosi
 | **K3s na Linux bare-metal / VM** | `modern_ebpf` (CO-RE, BTF, zero-install) |
 | **K3d na Linux Docker host** | `modern_ebpf` (kernel host dostępny przez Docker) |
 | **Kind na Linux** | `modern_ebpf` |
-| **K3d/Kind na macOS Docker Desktop** | `modern_ebpf` zwykle działa (LinuxKit VM ma BTF od ~2024); fallback `ebpf` (legacy, wymaga probe download) |
+| **K3d/Kind na macOS Apple Silicon (arm64)** | `modern_ebpf` startuje, **ale reguły plikowe NIE firują** — LinuxKit kernel ma uszkodzone tracepointy `sys_enter_open`/`sys_enter_creat` (`libbpf: failed to determine tracepoint`). Reguły **sieciowe** (connect/sendto) działają normalnie |
+| **K3d/Kind na macOS Intel (amd64)** | `modern_ebpf` zwykle działa pełniej; fallback `ebpf` (legacy, wymaga probe download) |
 | **K3d/Kind na Windows WSL2** | `modern_ebpf` (WSL2 kernel ma BTF) |
 | Dedicated kernel-module install | `kmod` — rzadko używane, wymaga `apt-get install falco-kernel-headers` |
 
 **Jeśli `modern_ebpf` nie startuje**: sprawdź `kubectl logs -n falco <falco-pod>` — błąd "BPF program load failed" → spróbuj `ebpf` (legacy). Custom syscall rules mogą nie działać na bardzo starych kernelach.
+
+> **macOS Apple Silicon — known limitation:** Część 3 ćwiczenia (zapis do `/etc/passwd` triggeruje custom rule "Write to /etc") **nie zadziała** na Docker Desktop arm64 — nawet wbudowane reguły plikowe nie firują z powodu BPF tracepoint failures w LinuxKit. Sprawdzono 2026-04 na Falco 0.43.1. Dla pełnej walidacji ćwiczenia użyj Linuksa, WSL2, lub maszyny x86. Część 4 (egress 4444 przez `nc`) **działa** na każdej platformie — używa innych syscalli (connect).
 
 ## Prereqs
 - K3s / Kind / K3d cluster
