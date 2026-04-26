@@ -32,7 +32,7 @@ kubectl logs -n falco -l app.kubernetes.io/name=falco --tail=50 | grep -i "rules
 
 > **Alternatywa**: jeśli custom rules się zmieniają często, trzymaj je jako `helm --values values.yaml` → commit w Git → `helm upgrade falco -f values.yaml` przy każdej zmianie.
 >
-> ConfigMap `custom-rules.yaml` w katalogu **nie jest** deploy'owana przez `kubectl apply` — ten plik służy tylko jako źródło dla `--set-file`.
+> `custom-rules.yaml` w katalogu to **surowe reguły Falco** (nie manifest K8s) — `helm --set-file` wstawia jego treść 1:1 do values, chart tworzy z tego ConfigMap `falco-rules`. Nie aplikuj go przez `kubectl apply`.
 
 ## Część 2 — Triggeruj built-in rule "Terminal shell"
 

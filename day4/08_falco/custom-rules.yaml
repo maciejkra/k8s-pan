@@ -1,35 +1,32 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: falco-custom-rules
-  namespace: falco
-data:
-  custom-rules.yaml: |
-    - list: allowed_etc_writers
-      items: [apt-get, dpkg, rpm, yum, npm, pip, gem, cargo, systemd-tmpfiles, apk]
+# Surowe reguły Falco (NIE ConfigMap). Ładowane przez:
+#   helm install falco ... --set-file customRules."custom-rules\.yaml"=./custom-rules.yaml
+# Helm wstawia ten plik 1:1 jako wartość klucza customRules."custom-rules.yaml";
+# chart Falco tworzy z tego ConfigMap `falco-rules` mountowany w DaemonSet.
+- list: allowed_etc_writers
+  items: [apt-get, dpkg, rpm, yum, npm, pip, gem, cargo, systemd-tmpfiles, apk]
 
-    - rule: Custom - Write to /etc
-      desc: Wykrywa zapis do /etc/ wewnątrz kontenera (typowy backdoor)
-      condition: >
-        evt.type=open and evt.is_open_write=true
-        and fd.name startswith /etc/
-        and container
-        and not proc.name in (allowed_etc_writers)
-      output: >
-        Custom rule: zapis do /etc wewnątrz kontenera
-        (user=%user.name file=%fd.name proc=%proc.name container=%container.name image=%container.image.repository)
-      priority: WARNING
-      tags: [custom, filesystem]
+- rule: Custom - Write to /etc
+  desc: Wykrywa zapis do /etc/ wewnątrz kontenera (typowy backdoor)
+  condition: >
+    evt.type=open and evt.is_open_write=true
+    and fd.name startswith /etc/
+    and container
+    and not proc.name in (allowed_etc_writers)
+  output: >
+    Custom rule: zapis do /etc wewnątrz kontenera
+    (user=%user.name file=%fd.name proc=%proc.name container=%container.name image=%container.image.repository)
+  priority: WARNING
+  tags: [custom, filesystem]
 
-    - rule: Custom - Outbound connection to suspicious port
-      desc: Detekcja egress na port 4444 (Metasploit default)
-      condition: >
-        evt.type in (connect, sendto)
-        and fd.l4proto=tcp
-        and fd.sport != 0
-        and fd.dport = 4444
-        and container
-      output: >
-        Podejrzane wyjście TCP na port 4444 (container=%container.name dest=%fd.rip)
-      priority: CRITICAL
-      tags: [custom, network, mitre_command_and_control]
+- rule: Custom - Outbound connection to suspicious port
+  desc: Detekcja egress na port 4444 (Metasploit default)
+  condition: >
+    evt.type in (connect, sendto)
+    and fd.l4proto=tcp
+    and fd.sport != 0
+    and fd.dport = 4444
+    and container
+  output: >
+    Podejrzane wyjście TCP na port 4444 (container=%container.name dest=%fd.rip)
+  priority: CRITICAL
+  tags: [custom, network, mitre_command_and_control]

@@ -36,7 +36,7 @@ Output: structured logs (JSON) → SIEM (Splunk, Datadog, Elastic) lub **Falcosi
 
 ## Pliki
 
-- `custom-rules.yaml` — ConfigMap `falco-custom-rules` z dwoma customowymi regułami (write /etc, egress port 4444)
+- `custom-rules.yaml` — surowe reguły Falco (ładowane przez `helm --set-file customRules`, NIE ConfigMap K8s); dwie reguły: write /etc, egress port 4444
 - `trigger-pod.yaml` — prosty Pod `innocent-app` dla testowania
 
 ## Zadanie
