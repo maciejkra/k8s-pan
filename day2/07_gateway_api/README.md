@@ -127,6 +127,22 @@ kubectl get pods -n envoy-gateway-system
 kubectl get gatewayclass    # powinien być "eg" (envoy gateway)
 ```
 
+### Sanity check — `curl http://localhost/` zwraca stronę
+
+Zanim pójdziesz w nip.io / specyficzne domeny, zweryfikuj że plumbing działa: stwórz Gateway + catch-all HTTPRoute (`httproute-welcome.yaml` matchuje każdy Host header) i odpytaj na czystym `localhost`.
+
+```bash
+kubectl apply -f gateway.yaml -f app.yaml -f httproute-welcome.yaml
+kubectl wait --for=condition=Programmed gateway/training-gateway --timeout=2m
+
+curl -s http://localhost/ | head -3
+# <!DOCTYPE html>
+# <html>
+# <head>
+```
+
+Jeśli widzisz HTML nginxa — port 80 z hosta dochodzi do dataplane'u Envoja, GatewayClass `eg` reconciluje, HTTPRoute jest podpięty. `welcome` zostaje przez całe ćwiczenie; w Przykładach 1-2 dorzucamy bardziej specyficzne route'y po path / hostname — wygrywają z catch-all dla swoich domen (Gateway API stosuje most-specific match).
+
 ---
 
 ## Przykład 1 — Routing po URI (path)
