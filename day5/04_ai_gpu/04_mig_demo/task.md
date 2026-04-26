@@ -1,12 +1,26 @@
 # Zadanie — MIG partitioning
 
+## Część 0 — Patch capacity nodów (wymagane dla fake-gpu-operator)
+
+`fake-gpu-operator` **nie eksponuje** `nvidia.com/mig-*` jako Kubernetes extended resource — `mig-faker` tylko ustawia annotacje (`run.ai/mig-mapping`) które konsumuje Run:AI scheduler. W realnym klastrze NVIDIA GPU Operator partycjonuje GPU i kubelet rejestruje capacity automatycznie. Tu **ręcznie patchujemy** capacity żeby pokazać scheduling:
+
+```bash
+NODE=$(kubectl get nodes -l run.ai/simulated-gpu-node-pool=default -o name | head -1 | cut -d/ -f2)
+kubectl patch node $NODE --subresource=status --type=merge \
+  --patch='{"status":{"capacity":{"nvidia.com/mig-1g.5gb":"7","nvidia.com/mig-3g.20gb":"2"}}}'
+```
+
+> **Pedagogicznie:** liczby 7 i 2 odpowiadają geometrii MIG na A100 40GB:
+> - 7× `1g.5gb` = pełne wykorzystanie wszystkich 7 SM slices po 5GB
+> - 2× `3g.20gb` = dwa większe instances (każdy 3/7 SM, 20GB)
+
 ## Część 1 — Sprawdź capacity
 
 ```bash
-kubectl get nodes -o jsonpath='{.items[*].status.capacity}' | tr ',' '\n' | grep mig
-# Spodziewane (zgodnie z topology.yaml):
-# nvidia.com/mig-1g.5gb: 7
-# nvidia.com/mig-3g.20gb: 2
+kubectl describe node $NODE | grep -E "mig-1g|mig-3g"
+# Spodziewane:
+#   nvidia.com/mig-1g.5gb:   7
+#   nvidia.com/mig-3g.20gb:  2
 ```
 
 ## Część 2 — Deploy 3× 1g.5gb Pody

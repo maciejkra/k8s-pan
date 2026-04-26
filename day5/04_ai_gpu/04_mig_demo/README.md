@@ -36,12 +36,9 @@ Dla A100 40GB: `1g.5gb`, `2g.10gb`, `3g.20gb`, `4g.20gb`, `7g.40gb`. Nasz `topol
 
 ## Zadanie
 
-1. Sprawdź zaawansowaną topology (z 01_install_fake_gpu mamy `mig.enabled: true`):
-   ```bash
-   kubectl get nodes -o jsonpath='{.items[*].status.capacity}' | tr ',' '\n' | grep mig
-   # nvidia.com/mig-1g.5gb: 7
-   # nvidia.com/mig-3g.20gb: 2
-   ```
+Pełne kroki w [`task.md`](./task.md). Skrót:
+
+1. **Najpierw** patch capacity nodów (`task.md` Część 0) — `fake-gpu-operator` nie eksponuje `nvidia.com/mig-*` automatycznie, w realnym klastrze robi to NVIDIA GPU Operator po `mig-mode=enabled`.
 
 2. Wdroż 3 Pody po 1g.5gb (małe inference):
    ```bash

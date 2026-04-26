@@ -11,7 +11,9 @@ spec:
       image: ubuntu:22.04
       command: ["sleep", "3600"]
       resources:
+        # cpu/memory dostosowane do typowego Kind/K3d workera (~8GB RAM, 8 CPU).
+        # Dla realnego klastra GPU (DGX/EC2 p4d) podnieś do cpu: "8", memory: 16Gi.
         limits:
           nvidia.com/gpu: 4            # cały node (gdy gpuCount: 4 w topology)
-          cpu: "8"
-          memory: 16Gi
+          cpu: "2"
+          memory: 4Gi

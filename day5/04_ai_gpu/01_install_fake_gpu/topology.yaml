@@ -1,30 +1,31 @@
+# fake-gpu-operator chart values (>= 0.0.55, tested on 0.0.80, 2026-04).
+#
+# WAŻNE — gpuProduct musi zawierać "40GB" lub "80GB" w nazwie żeby mig-faker
+# rozpoznał geometrię MIG (mig-faker switch'uje na: gpuProduct contains "40GB" |
+# "80GB" | inne → "not supported"). Stąd "NVIDIA-A100-SXM4-40GB" zamiast samego
+# "Tesla-A100" — to też jest realny string z `nvidia-smi` na A100 SXM4 40GB.
 topology:
   nodePools:
     default:
-      gpuProduct: Tesla-A100
+      gpuProduct: NVIDIA-A100-SXM4-40GB
       gpuCount: 4                         # 4 fake GPU per node
-      gpuMemory: 40                       # GB — typowa A100 40GB
-  mig:
-    enabled: true
-    strategy: mixed                       # mixed | single | none
-    profiles:
-      - name: 1g.5gb                      # A100 40GB profile (dla 80GB użyj 1g.10gb)
-        instances: 7
-      - name: 3g.20gb
-        instances: 2
+      gpuMemory: 40                       # GB
+  nodePoolLabelKey: run.ai/simulated-gpu-node-pool
+  migStrategy: mixed                      # mixed | single | none
 
-# fake-gpu-operator value overrides
-node-deployer:
+# Komponenty operator-a (camelCase — chart 0.0.55+ używa tego, NIE kebab-case).
+devicePlugin:
   enabled: true
-device-plugin:
+statusUpdater:
   enabled: true
-status-updater:
-  enabled: true
-status-exporter:
+statusExporter:
   enabled: true                           # DCGM exporter mock
+topologyServer:
+  enabled: true
+migFaker:
+  enabled: true                           # ustawia annotacje MIG state z run.ai/mig.config
 
-# kwokDeployment: true = tworzy virtualne "kwok" node'y jako GPU-enabled (bez realnych K3d workers).
-# kwokDeployment: false = używa ISTNIEJĄCYCH K3d/Kind/K3s workers, dodaje im fake capacity.
-# Domyślnie FALSE — chcemy żeby prawdziwe agent nody miały GPU capacity (prostsze dla trainingu).
-kwokDeployment:
+# Wyłącz KWOK device-plugin — robi virtualne node'y, my chcemy fake GPU
+# na PRAWDZIWYCH workerach (Kind/K3d/K3s).
+kwokGpuDevicePlugin:
   enabled: false

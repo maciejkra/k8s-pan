@@ -98,17 +98,23 @@ sharing:
 ## Quick start
 
 ```bash
-# 1. Instalacja fake-gpu-operator
+# 1. Instalacja fake-gpu-operator (chart 0.0.55+, sprawdzono na 0.0.80)
 cd 01_install_fake_gpu
 helm install gpu-operator -f topology.yaml --create-namespace -n gpu-operator \
   oci://ghcr.io/run-ai/fake-gpu-operator/fake-gpu-operator
+
+# 2. Label workerów (szczegóły w 01_install_fake_gpu/README.md)
+for n in $(kubectl get nodes -l '!node-role.kubernetes.io/control-plane' -o name); do
+  kubectl label "$n" run.ai/simulated-gpu-node-pool=default --overwrite
+  kubectl label "$n" nvidia.com/gpu.product=NVIDIA-A100-SXM4-40GB --overwrite
+done
 kubectl wait --for=condition=Ready -n gpu-operator pod -l app=device-plugin --timeout=3m
 
-# 2. Sprawdź "GPU" na nodach
+# 3. Sprawdź "GPU" na nodach
 kubectl describe nodes | grep -A 2 "Capacity:" | grep nvidia
 # nvidia.com/gpu: 4
 
-# 3. Uruchom workload
+# 4. Uruchom workload
 kubectl apply -f ../02_gpu_pod/pod.yaml
 kubectl describe pod gpu-workload | grep -A 5 "Limits:"
 ```

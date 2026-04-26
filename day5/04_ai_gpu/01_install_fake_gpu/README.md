@@ -5,21 +5,24 @@ Zainstalować fake-gpu-operator emulujący stos NVIDIA na K3d klastrze. Skonfigu
 
 ## Zadanie
 
-1. Zlabeluj nody jako "GPU":
-   ```bash
-   for n in $(kubectl get nodes -l '!node-role.kubernetes.io/control-plane' -o name); do
-     kubectl label "$n" nvidia.com/gpu.product=Tesla-A100 --overwrite
-     kubectl label "$n" run.ai/simulated-gpu-node-pool=default --overwrite
-   done
-   kubectl get nodes --show-labels | head
-   ```
-
-2. Instalacja:
+1. Instalacja chart-a:
    ```bash
    helm install gpu-operator \
      -f topology.yaml \
      --namespace gpu-operator --create-namespace \
      oci://ghcr.io/run-ai/fake-gpu-operator/fake-gpu-operator
+   ```
+
+2. Zlabeluj workery jako "GPU node pool":
+   ```bash
+   for n in $(kubectl get nodes -l '!node-role.kubernetes.io/control-plane' -o name); do
+     # Wymagane: chart przypisuje nody do nodePool przez ten label
+     kubectl label "$n" run.ai/simulated-gpu-node-pool=default --overwrite
+     # gpu.product label — musi zawierać "40GB"/"80GB" dla mig-faker (D5/04/04 MIG demo).
+     # Na innym hardware: NVIDIA-A100-SXM4-80GB / NVIDIA-A100-PCIE-40GB / NVIDIA-H100-SXM5-80GB.
+     kubectl label "$n" nvidia.com/gpu.product=NVIDIA-A100-SXM4-40GB --overwrite
+   done
+   kubectl get nodes --show-labels | head
    ```
 
 3. Sprawdź pody operatora:
