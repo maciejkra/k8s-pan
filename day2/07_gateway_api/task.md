@@ -4,9 +4,9 @@ Wystaw **aplikację Python** (z `D1/10` Python+Redis) na świat przez **Gateway 
 
 ## Część 1 — routing po URI
 
-1. Zweryfikuj, że Envoy Gateway działa (`kubectl get pods -n envoy-gateway-system`) i że istnieje GatewayClass `eg`. Jeśli instalujesz ręcznie (bez `setup-cluster.sh`), najpierw wykonaj komendy Helm z sekcji „Instalacja Envoy Gateway + cert-manager (Helm)" w `README.md`.
+1. Zweryfikuj, że Envoy Gateway działa (`kubectl get pods -n envoy-gateway-system`). Jeśli instalujesz ręcznie (bez `setup-cluster.sh`), najpierw wykonaj komendy Helm z sekcji „Instalacja Envoy Gateway + cert-manager (Helm)" w `README.md`. **Na Kind dodatkowo:** `kubectl apply -f envoyproxy-kind.yaml` (NodePort + nodeSelector — bez tego LoadBalancer Service zostaje pending).
 2. Wdroż drugi backend `app.yaml` (demo nginx) — będzie służył jako "drugi serwis" obok Pythona.
-3. Stwórz `Gateway` z listenerem HTTP:80 (zobacz `gateway.yaml`). Poczekaj, aż status będzie `Programmed=True`.
+3. Stwórz `Gateway` z listenerem HTTP:80 (zobacz `gateway-http.yaml`). Na Kind po pierwszym apply gateway-http.yaml wykonaj `kubectl patch gatewayclass eg --type=merge -p '{"spec":{"parametersRef":{"group":"gateway.envoyproxy.io","kind":"EnvoyProxy","name":"kind-control-plane","namespace":"envoy-gateway-system"}}}'` żeby podpiąć EnvoyProxy CR. Poczekaj, aż status będzie `Programmed=True`.
 4. Stwórz `HTTPRoute`, który:
    - kieruje `demo.127-0-0-1.nip.io/api/...` → **Python z D1/10** (`python-service:80` — Service port, nie containerPort 5002!)
    - kieruje `demo.127-0-0-1.nip.io/` → demo nginx (`demo-app:80`)
@@ -28,8 +28,8 @@ Wystaw **aplikację Python** (z `D1/10` Python+Redis) na świat przez **Gateway 
 ## Część 4 — TLS self-signed (openssl + `kubernetes.io/tls` Secret)
 
 1. Wygeneruj self-signed cert `openssl`-em (z SAN-ami dla trzech domen nip.io: `demo.`, `python.`, `nginx.`).
-2. Zaaplikuj Secret typu `kubernetes.io/tls` o nazwie `app-tls` (tej oczekuje Gateway w `gateway.yaml`).
-3. `kubectl apply -f gateway.yaml` — listener `https` z `certificateRefs: [{Secret: app-tls}]` powinien wejść w `Programmed=True`.
+2. Zaaplikuj Secret typu `kubernetes.io/tls` o nazwie `app-tls` (tej oczekuje Gateway w `gateway-https.yaml`).
+3. `kubectl apply -f gateway-https.yaml` — dorzuca listener `https` z `certificateRefs: [{Secret: app-tls}]` do istniejącego Gateway `training-gateway`. Po apply oba listenery (HTTP:80 + HTTPS:443) powinny być `Programmed=True`.
 4. `curl -kv https://python.127-0-0-1.nip.io/api/v1/info` — w logach `curl -v` znajdź linie `subject:` i `issuer:`. Co potwierdza, że to self-signed?
 5. **Pytanie:** co się stanie, jeśli podmienisz Secret `app-tls` na nowy (inny klucz/cert) bez restartu Envoy? Dlaczego?
 

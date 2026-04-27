@@ -60,9 +60,11 @@ W Gateway API: routing **i** filters są w spec. Standardowe: `RequestHeaderModi
 # 1. Zdobądź IP K3d LB (zazwyczaj 127.0.0.1 jeśli porty zmapowane)
 echo "127.0.0.1 app.example.com" | sudo tee -a /etc/hosts
 
-# 2. Zaaplikuj wszystko
-kubectl apply -f app.yaml -f gateway.yaml -f cluster-issuer-letsencrypt.yaml \
+# 2. Zaaplikuj wszystko (gateway-https zawiera HTTPS listener wymagający Secret app-tls)
+kubectl apply -f app.yaml -f gateway-http.yaml -f cluster-issuer-letsencrypt.yaml \
               -f certificate.yaml -f httproute.yaml
+# Dopiero po Ready certificate:
+# kubectl apply -f gateway-https.yaml
 
 # 3. Czekaj na cert (może zająć 1-3 min)
 kubectl wait --for=condition=Ready certificate/app-tls --timeout=5m

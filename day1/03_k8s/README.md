@@ -21,6 +21,7 @@ Postawić lokalny klaster Kubernetes (Kind), zweryfikować dostęp i poznać pod
    ```bash
    kind create cluster --config ./kind.yaml --name workshop
    ```
+   > Porty 80/443 hosta mapują się na NodePort 30080/30443 control-plane node — używane potem przez Envoy Gateway dataplane (D2/07).
 
 3. Sprawdź context i klaster:
    ```bash

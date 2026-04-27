@@ -1,3 +1,7 @@
+# Gateway dla Część 1-4 — tylko listener HTTP:80.
+# GatewayClass `eg` aplikujemy tu (powinien istnieć w klastrze przed użyciem
+# httproute-uri/-domain). Część 5 (TLS) — apply gateway-https.yaml dorzuca
+# listener HTTPS:443 przez ten sam metadata.name (apply nadpisze).
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
 metadata:
@@ -15,17 +19,6 @@ spec:
     - name: http
       protocol: HTTP
       port: 80
-      allowedRoutes:
-        namespaces:
-          from: All
-    - name: https
-      protocol: HTTPS
-      port: 443
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - kind: Secret
-            name: app-tls
       allowedRoutes:
         namespaces:
           from: All

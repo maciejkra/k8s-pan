@@ -124,15 +124,29 @@ couldn't Present challenge default/app-tls-...: gateway api is not enabled
 
 ```bash
 kubectl get pods -n envoy-gateway-system
-kubectl get gatewayclass    # powinien być "eg" (envoy gateway)
 ```
+
+### Krok dodatkowy — Kind only
+
+Kind nie ma cloud-providera, więc dataplane'owy Service Envoya wisi w `EXTERNAL-IP=<pending>`. `envoyproxy-kind.yaml` (EnvoyProxy CR) patchuje go na `NodePort 30080/30443` i pinnie pod na control-plane (gdzie `kind.yaml` mapuje hostPort 80→containerPort 30080 i 443→30443).
+
+```bash
+kubectl apply -f envoyproxy-kind.yaml
+```
+
+K3s/K3d — pomiń ten krok (Klipper ServiceLB obsłuży LoadBalancer natywnie).
 
 ### Sanity check — `curl http://localhost/` zwraca stronę
 
-Zanim pójdziesz w nip.io / specyficzne domeny, zweryfikuj że plumbing działa: stwórz Gateway + catch-all HTTPRoute (`httproute-welcome.yaml` matchuje każdy Host header) i odpytaj na czystym `localhost`.
+Zanim pójdziesz w nip.io / specyficzne domeny, zweryfikuj że plumbing działa: stwórz Gateway + catch-all HTTPRoute (`httproute-welcome.yaml` matchuje każdy Host header).
 
 ```bash
-kubectl apply -f gateway.yaml -f app.yaml -f httproute-welcome.yaml
+kubectl apply -f gateway-http.yaml -f app.yaml -f httproute-welcome.yaml
+
+# Kind only — podepnij EnvoyProxy CR pod GatewayClass `eg` (po jego stworzeniu)
+kubectl patch gatewayclass eg --type=merge -p \
+  '{"spec":{"parametersRef":{"group":"gateway.envoyproxy.io","kind":"EnvoyProxy","name":"kind-control-plane","namespace":"envoy-gateway-system"}}}'
+
 kubectl wait --for=condition=Programmed gateway/training-gateway --timeout=2m
 
 curl -s http://localhost/ | head -3
@@ -152,11 +166,7 @@ Jeden Gateway, jeden hostname, **routing po prefixie ścieżki**:
 - `demo.127-0-0-1.nip.io/api` → Python z D1/10 (`python-service:80`)
 
 ```bash
-# Demo nginx (drugi backend obok Pythona)
-kubectl apply -f app.yaml
-
-# Gateway tylko HTTP:80 (bez TLS na razie)
-kubectl apply -f gateway.yaml
+# (Demo nginx + gateway-http już zaaplikowane w Sanity check wyżej.)
 
 # Routing po URI
 kubectl apply -f httproute-uri.yaml
@@ -236,8 +246,9 @@ kubectl create secret tls app-tls \
   --cert=/tmp/tls.crt --key=/tmp/tls.key \
   --dry-run=client -o yaml | kubectl apply -f -
 
-# 3) Gateway (gateway.yaml) ma już listener HTTPS:443 z certificateRef → Secret "app-tls"
-kubectl apply -f gateway.yaml
+# 3) Dorzuć listener HTTPS:443 (gateway-https.yaml zastępuje gateway-http.yaml
+#    przez tą samą metadata.name: training-gateway). certificateRef → Secret "app-tls"
+kubectl apply -f gateway-https.yaml
 kubectl apply -f httproute-domain.yaml   # albo httproute-uri.yaml
 ```
 
@@ -272,7 +283,10 @@ kubectl apply -f cluster-issuer-letsencrypt.yaml
 kubectl apply -f certificate.yaml
 kubectl describe certificate app-tls   # śledź sekcję "Events"
 
-# Gateway z listenerem HTTPS (gateway.yaml już zawiera oba listenery — HTTP i HTTPS)
+# Dopiero gdy Secret app-tls istnieje (cert-manager skończył challenge),
+# dorzuć listener HTTPS:443 do Gateway:
+kubectl wait --for=condition=Ready certificate/app-tls --timeout=5m
+kubectl apply -f gateway-https.yaml
 ```
 
 Test:
