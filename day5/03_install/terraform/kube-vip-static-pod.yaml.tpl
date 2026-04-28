@@ -12,11 +12,14 @@ spec:
       imagePullPolicy: IfNotPresent
       args:
         - manager
-        # Explicit path do kubeconfig. Default już jest "/etc/kubernetes/admin.conf",
-        # ale w v1.x bez tej flagi kube-vip czasem fallbackuje do in-cluster discovery
-        # i próbuje hostname "kubernetes" zamiast użyć mounted admin.conf.
-        - --k8sConfigPath=/etc/kubernetes/admin.conf
       env:
+        # cp_detect: kube-vip auto-wykrywa working API endpoint (loopback / VIP /
+        # hostname z kubeconfig). Bez tego v1.x hardkoduje URL `https://kubernetes:<port>`
+        # w pkg/manager/manager.go i pomija `server:` z mounted admin.conf — DNS lookup
+        # `kubernetes` fail w środowiskach gdzie hostname nie jest rozwiązywalny
+        # (np. DigitalOcean DNS). Ref: kube-vip/kube-vip/blob/v1.1.2/pkg/manager/manager.go.
+        - name: cp_detect
+          value: "true"
         - name: vip_arp
           value: "true"
         - name: port
