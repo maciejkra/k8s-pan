@@ -1,2 +1,5 @@
 day5/06_install/terraform/.terraform*
 day5/06_install/terraform/terraform.*
+day5/03_install/terraform/.terraform*
+day5/03_install/terraform/terraform.*
+day5/03_install/hosts

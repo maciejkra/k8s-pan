@@ -58,28 +58,28 @@ Praktycznie: w `/etc/hosts` na każdym node `kubeapi.example.com` celuje w **pub
 
 | Plik | Rola |
 |---|---|
-| `hosts` | Kopia `/etc/hosts` — mapowanie IP ↔ hostname dla 6 node + `kubeapi.example.com`. Generowany przez Terraform; wrzuć na każdy node. |
-| `kubeadm-config.yaml` | Config dla `kubeadm init` — k8s v1.35.3, podSubnet /16, audit, encryption |
-| `kube-vip-static-pod.yaml` | Manifest static pod kube-vip (v1.1.2) — edytuj `vip_interface` i `address` |
-| `prepare.sh` | Skrypt setup node-a (containerd + k8s 1.35 packages + sysctl + enable kubelet) |
+| `hosts` | Kopia `/etc/hosts` — mapowanie IP ↔ hostname dla 6 node + `kubeapi.example.com`. Generowany przez Terraform (gitignored). Bare-metal: wrzuć na każdy node. |
+| `kubeadm-config.yaml` | Config dla `kubeadm init` (bare-metal reference) — k8s v1.35.3, podSubnet /16, audit, encryption. Na DO Terraform renderuje `kubeadm-config.yaml.tpl` z realnym IP. |
+| `kube-vip-static-pod.yaml` | Manifest static pod kube-vip (v1.1.2, bare-metal reference). Na DO Terraform renderuje `kube-vip-static-pod.yaml.tpl` z `vip_interface=eth0`. |
+| `prepare.sh` | Skrypt setup node-a (cloud-init wait + containerd + k8s 1.35.3 pinned + sysctl + enable kubelet) |
 | `kubernetes/audit-policy.yaml` | K8s audit policy (per-pod events) |
-| `kubernetes/enc.yaml` | Encryption-at-rest dla etcd Secrets — wygeneruj klucz przed użyciem (instrukcja w `task.md` Część 0) |
-| `terraform/` | Opcjonalny provisioning na DigitalOcean (6 droplets + LB + VPC) |
+| `kubernetes/enc.yaml` | Encryption-at-rest dla etcd Secrets — bare-metal: placeholder do wypełnienia. Na DO Terraform generuje klucz losowo (`random_bytes`) i renderuje `enc.yaml.tpl`. |
+| `terraform/` | Provisioning na DigitalOcean: VPC + 6 droplets + LB + templatefile rendering wszystkich konfigów |
 
 ### Co robi Terraform vs co robisz Ty
 
-Po `terraform apply` (DO path) masz GOTOWE:
+Po `terraform apply` (DO path) masz GOTOWE — kursant wykonuje tylko `kubeadm init` / `join` + Cilium install.
 
-| | Terraform | Ty |
+| | Terraform | Ty (DO path) |
 |---|---|---|
-| 6 dropletów Ubuntu 24.04 (3 CP, 3 worker) | ✅ | — |
+| VPC + 6 dropletów Ubuntu 24.04 (3 CP, 3 worker) z `vpc_uuid` | ✅ | — |
 | DigitalOcean Load Balancer (TCP 6443 → CP) | ✅ | — |
-| Hostname dropletów (`cpnode1`, `knode1`, …) | ✅ DO ustawia automatycznie | — |
-| `/etc/hosts` na każdym node (6 IP + `kubeapi.example.com` → IP LB) | ✅ | — |
-| `prepare.sh` skopiowany i wykonany na każdym node | ✅ | — |
-| `kubeadm-config.yaml` + `kube-vip-static-pod.yaml` w `/root/` na CP | ✅ skopiowane | edytujesz `advertiseAddress`, `certSANs`, `vip_interface` przed `kubeadm init` |
-| `audit-policy.yaml` + `enc.yaml` w `/etc/kubernetes/` na CP | ✅ skopiowane | klucz `enc.yaml` generujesz LOKALNIE przed `terraform apply` (Część 0) |
-| Wszystko od `kubeadm init` w dół | — | wykonujesz wg `task.md` Części 2–9 |
+| Hostname + `/etc/hosts` na każdym node (idempotent grep -qF) | ✅ | — |
+| `prepare.sh` (cloud-init wait + k8s 1.35.3) na 6 node'ach | ✅ | — |
+| `/root/kubeadm-config.yaml` per CP — `advertiseAddress` = real VPC IP, `certSANs` = wszystkie publiczne CP IP + LB IP (templatefile) | ✅ | — |
+| `/etc/kubernetes/manifests/kube-vip.yaml` na każdym CP — `vip_interface=eth0` (templatefile) | ✅ | — |
+| `/etc/kubernetes/{audit-policy,enc}.yaml` na każdym CP — klucz `enc` losowy per apply (`random_bytes`) | ✅ | — |
+| `kubeadm init`, `kubectl config`, Cilium install, `kubeadm join` × 5 | — | wykonujesz wg `task.md` Części 2–6 |
 
 ## Zadanie
 

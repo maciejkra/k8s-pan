@@ -78,8 +78,9 @@ echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.
   sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 sudo apt-get update
+# Pin do v1.35.3 — żeby `kubernetesVersion` w kubeadm-config zgadzała się z binarami.
 sudo DEBIAN_FRONTEND=noninteractive apt-get install --allow-downgrades --allow-change-held-packages -y \
-  kubelet kubeadm kubectl
+  kubelet=1.35.3-1.1 kubeadm=1.35.3-1.1 kubectl=1.35.3-1.1
 
 # Hold packages — no unattended upgrade
 sudo apt-mark hold kubelet kubeadm kubectl
@@ -87,26 +88,7 @@ sudo apt-mark hold kubelet kubeadm kubectl
 # Enable kubelet (kubeadm init/join wystartuje go, ale po reboocie chcemy auto-start)
 sudo systemctl enable kubelet
 
-# Auto-patch advertiseAddress w /root/kubeadm-config.yaml (tylko CP node — terraform na DO
-# kopiuje ten plik). Wykryj real eth0 prywatny IP (VPC range 10.X / 172.16-31 / 192.168) —
-# `digitalocean_droplet.ipv4_address_private` zwraca legacy DO IP którego NIE ma na eth0.
-if [[ -f /root/kubeadm-config.yaml ]]; then
-  PRIV_IP=$(ip -4 -o addr show dev eth0 2>/dev/null | awk '{print $4}' | cut -d/ -f1 \
-    | grep -E '^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)' | head -1 || true)
-  if [[ -n "${PRIV_IP:-}" ]]; then
-    sudo sed -i 's|^\([ \t]*advertiseAddress:[ \t]*\).*$|\1"'"$PRIV_IP"'"|' /root/kubeadm-config.yaml
-    echo "==> Patched advertiseAddress in /root/kubeadm-config.yaml: $PRIV_IP"
-  else
-    echo "==> WARN: nie wykryto prywatnego IP na eth0 — advertiseAddress nietknięte"
-  fi
-fi
-
 echo ""
 echo "=========================================="
 echo "Node gotowy na kubeadm init / join."
-echo "Next steps:"
-echo "  1. Set hostname: sudo hostnamectl set-hostname <name>"
-echo "  2. Update /etc/hosts"
-echo "  3. Dla CP: copy kube-vip-static-pod.yaml -> /etc/kubernetes/manifests/"
-echo "  4. kubeadm init / join"
 echo "=========================================="

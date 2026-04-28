@@ -11,67 +11,40 @@ ping -c 2 10.135.0.7    # cpnode2
 ping -c 2 10.135.0.2    # knode1
 ```
 
-Wygeneruj klucz szyfrujący Secrets (placeholder w `kubernetes/enc.yaml`):
-```bash
-NEW_KEY=$(head -c 32 /dev/urandom | base64)
-sed -i.bak "s|REPLACE_ME_BASE64_32B|${NEW_KEY}|" kubernetes/enc.yaml
-grep secret kubernetes/enc.yaml
-```
+**Klucz szyfrujący Secrets** (`enc.yaml`):
+- **DO**: Terraform generuje losowo per `terraform apply` (`random_bytes` provider) i wstrzykuje przez templatefile — nic nie robisz.
+- **Bare-metal**: `kubernetes/enc.yaml` ma placeholder `REPLACE_ME_BASE64_32B`. Wygeneruj i podstaw:
+  ```bash
+  NEW_KEY=$(head -c 32 /dev/urandom | base64)
+  sed -i.bak "s|REPLACE_ME_BASE64_32B|${NEW_KEY}|" kubernetes/enc.yaml
+  ```
 
 ## Część 1 — Przygotuj KAŻDY z 6 node'ów
 
-Skopiuj `prepare.sh` na każdy node i uruchom:
+`prepare.sh` instaluje: containerd, kubeadm/kubelet/kubectl v1.35.3, sysctl (forwarding, bridge-nf), disable swap, enable kubelet. Plus na DO: cloud-init wait + masking unattended-upgrades (rozwiązuje race apt lock).
 
-```bash
-# Na każdym z 6 node'ów:
-scp prepare.sh user@<ip>:/tmp/
-ssh user@<ip>
-chmod +x /tmp/prepare.sh && sudo /tmp/prepare.sh
-```
-
-`prepare.sh` instaluje: containerd, kubeadm/kubelet/kubectl v1.35, sysctl (forwarding, bridge-nf), disable swap, enable kubelet.
+- **DO**: Terraform odpala `prepare.sh` na każdym z 6 dropletów automatycznie podczas `terraform apply`. Skip do Część 2.
+- **Bare-metal**:
+  ```bash
+  # Na każdym z 6 node'ów:
+  scp prepare.sh user@<ip>:/tmp/
+  ssh user@<ip>
+  chmod +x /tmp/prepare.sh && sudo /tmp/prepare.sh
+  ```
 
 ## Część 2 — Setup pierwszego CP node (cpnode1)
 
+Na DO Terraform już ułożył całość: hostname, `/etc/hosts`, `/etc/kubernetes/{audit-policy,enc}.yaml`, `/etc/kubernetes/manifests/kube-vip.yaml` (vip_interface=eth0, address=10.135.0.100), `/root/kubeadm-config.yaml` z poprawnym `advertiseAddress` (real VPC IP) i `certSANs` (publiczne CP IP + LB IP). Wystarczy SSH i `kubeadm init`.
+
 ```bash
-ssh user@10.135.0.5     # cpnode1
+ssh root@<cpnode1-public-ip>     # `terraform output cpnode_ips` → pierwszy
 
-# Hostname
-sudo hostnamectl set-hostname cpnode1
+# (opcjonalnie zweryfikuj):
+grep advertiseAddress /root/kubeadm-config.yaml   # → real prywatny IP
+ls /etc/kubernetes/manifests/                     # → kube-vip.yaml
+cat /etc/hosts                                    # → 6 node + kubeapi.example.com
 
-# /etc/hosts (wklej content z hosts file)
-sudo bash -c 'cat > /etc/hosts' <<'EOF'
-127.0.0.1 localhost
-10.135.0.5 cpnode1.example.com cpnode1
-10.135.0.7 cpnode2.example.com cpnode2
-10.135.0.3 cpnode3.example.com cpnode3
-10.135.0.2 knode1.example.com knode1
-10.135.0.6 knode2.example.com knode2
-10.135.0.4 knode3.example.com knode3
-10.135.0.100 kubeapi.example.com kubeapi
-EOF
-
-# Dodaj VIP tymczasowo na tym node (żeby kubeadm init mógł dotrzeć do siebie przez VIP)
-# ZMIEŃ `eth1` na swój network interface (`ip a` pokaże nazwy)
-sudo ip a a dev eth1 10.135.0.100/32
-
-# Skopiuj kubernetes/* do /etc/kubernetes/ (audit + encryption)
-sudo mkdir -p /etc/kubernetes
-sudo cp kubernetes/audit-policy.yaml /etc/kubernetes/
-sudo cp kubernetes/enc.yaml /etc/kubernetes/
-sudo mkdir -p /var/log/kubernetes/audit
-
-# Kluczowe: kube-vip jako STATIC POD, deploy PRZED kubeadm init
-# Edytuj kube-vip-static-pod.yaml:
-#  - vip_interface: eth1 → twoj interface (DO Ubuntu 24.04: eth0; bare-metal: `ip a`)
-#  - address: 10.135.0.100 → twoj VIP
-sudo mkdir -p /etc/kubernetes/manifests
-sudo cp kube-vip-static-pod.yaml /etc/kubernetes/manifests/kube-vip.yaml
-
-# Init klastra (Cilium zastępuje kube-proxy — skip faze).
-# UWAGA na DO: prepare.sh już zaktualizował advertiseAddress w /root/kubeadm-config.yaml
-# na real eth0 IP (sprawdź: `grep advertiseAddress /root/kubeadm-config.yaml`).
-# Bare-metal: zedytuj advertiseAddress + certSANs przed odpaleniem.
+# Init klastra (Cilium zastępuje kube-proxy — skip faze)
 sudo kubeadm init --config /root/kubeadm-config.yaml --upload-certs \
   --skip-phases=addon/kube-proxy
 
@@ -79,6 +52,14 @@ sudo kubeadm init --config /root/kubeadm-config.yaml --upload-certs \
 # Cert-key (--certificate-key) WYGASA po 2h. Jeśli przeciągniesz, regeneruj:
 #   sudo kubeadm init phase upload-certs --upload-certs
 ```
+
+**Bare-metal** dodatkowo PRZED `kubeadm init`:
+- `sudo hostnamectl set-hostname cpnode1`
+- Wklej `/etc/hosts` z pliku `./hosts` (podstaw realne IP swoich VM)
+- `sudo ip a a dev <iface> 10.135.0.100/32` — tymczasowy VIP (na DO bez sensu, VPC blokuje GARP)
+- Edytuj `kube-vip-static-pod.yaml`: `vip_interface` → twój interfejs, `address` → twój VIP
+- `sudo mkdir -p /etc/kubernetes/manifests && sudo cp kube-vip-static-pod.yaml /etc/kubernetes/manifests/kube-vip.yaml`
+- Edytuj `kubeadm-config.yaml`: `advertiseAddress` → IP cpnode1, `certSANs` → realne IP swoich CP
 
 Setup kubectl dla twojego usera:
 ```bash
@@ -111,43 +92,36 @@ cilium status --wait
 
 ## Część 4 — Join pozostałych 2 CP node'ów
 
-Na cpnode2 (10.135.0.7):
+Na DO Terraform już ułożył pliki na cpnode2/3 (kube-vip manifest, audit-policy, enc.yaml, kubeadm-config). Wystarczy SSH i join.
+
 ```bash
-ssh user@10.135.0.7
+ssh root@<cpnode2-public-ip>
 
-# hostname + /etc/hosts (jak w Części 2)
-sudo hostnamectl set-hostname cpnode2
-# ... kopia /etc/hosts ...
-
-# KLUCZOWE: skopiuj static pod manifest kube-vip (kubeadm join tego nie robi!)
-sudo mkdir -p /etc/kubernetes/manifests
-scp cpnode1:/etc/kubernetes/manifests/kube-vip.yaml /tmp/
-sudo cp /tmp/kube-vip.yaml /etc/kubernetes/manifests/
-
-# Skopiuj też audit/encryption files
-scp cpnode1:/etc/kubernetes/audit-policy.yaml /tmp/
-scp cpnode1:/etc/kubernetes/enc.yaml /tmp/
-sudo cp /tmp/audit-policy.yaml /tmp/enc.yaml /etc/kubernetes/
-
-# Join jako CP (użyj komendy z wyjścia kubeadm init na cpnode1)
+# Join jako CP (komenda z wyjścia `kubeadm init` na cpnode1)
 sudo kubeadm join kubeapi.example.com:6443 \
   --token <your-token> \
   --discovery-token-ca-cert-hash sha256:<your-hash> \
   --control-plane --certificate-key <your-cert-key>
 ```
 
-Powtórz dla cpnode3 (10.135.0.3).
+Powtórz dla cpnode3.
+
+**Bare-metal** dodatkowo PRZED `kubeadm join`:
+- hostname + `/etc/hosts` jak w Części 2
+- `scp cpnode1:/etc/kubernetes/manifests/kube-vip.yaml /etc/kubernetes/manifests/`
+- `scp cpnode1:/etc/kubernetes/audit-policy.yaml cpnode1:/etc/kubernetes/enc.yaml /etc/kubernetes/`
 
 ## Część 5 — Join 3 worker nodów
 
-Na każdym z knode1/2/3 (10.135.0.2, 10.135.0.6, 10.135.0.4):
+Worker nie potrzebuje kube-vip, audit ani enc.yaml. Tylko join:
 ```bash
-# hostname + /etc/hosts
-# Brak kube-vip dla worker (tylko CP potrzebuje)
+ssh root@<knode1-public-ip>
 sudo kubeadm join kubeapi.example.com:6443 \
   --token <your-token> \
   --discovery-token-ca-cert-hash sha256:<your-hash>
 ```
+
+Powtórz dla knode2, knode3.
 
 ## Część 6 — Weryfikacja
 
@@ -173,13 +147,12 @@ kubectl get leases -n kube-system plndr-cp-lock -o jsonpath='{.spec.holderIdenti
 LEADER=$(kubectl get leases -n kube-system plndr-cp-lock -o jsonpath='{.spec.holderIdentity}')
 echo "Leader był: $LEADER — wyłączam..."
 
-# Np. via multipass:
-multipass stop $LEADER
-# Albo: ssh $LEADER sudo shutdown -h now
+# DO: ssh root@<public-ip-LEADERa> sudo shutdown -h now
+# Multipass: multipass stop $LEADER
 
-# Z laptopa (kubeapi.example.com → VIP):
+# Z laptopa (kubeapi.example.com → VIP / DO LB):
 kubectl get nodes
-# Powinno nadal działać (po kilku sekundach VIP przenosi się na inny CP)
+# Powinno działać po kilkunastu sekundach (DO LB health-check 5s × 3, lub VIP failover na bare-metal)
 
 kubectl get leases -n kube-system plndr-cp-lock -o jsonpath='{.spec.holderIdentity}'
 # nowy leader (np. cpnode2)
