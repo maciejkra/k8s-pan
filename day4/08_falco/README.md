@@ -24,14 +24,14 @@ Output: structured logs (JSON) → SIEM (Splunk, Datadog, Elastic) lub **Falcosi
 | **K3s na Linux bare-metal / VM** | `modern_ebpf` (CO-RE, BTF, zero-install) |
 | **K3d na Linux Docker host** | `modern_ebpf` (kernel host dostępny przez Docker) |
 | **Kind na Linux** | `modern_ebpf` |
-| **K3d/Kind na macOS Apple Silicon (arm64)** | `modern_ebpf` startuje, **ale reguły plikowe NIE firują** — LinuxKit kernel ma uszkodzone tracepointy `sys_enter_open`/`sys_enter_creat` (`libbpf: failed to determine tracepoint`). Reguły **sieciowe** (connect/sendto) działają normalnie |
+| **K3d/Kind na macOS Apple Silicon (arm64)** | `modern_ebpf` startuje. Reguły plikowe (`open*`, `creat`) **firują** — LinuxKit ARM64 kernel emituje `sys_enter_openat`, mimo że loguje przy starcie błąd `libbpf: failed to determine tracepoint sys_enter_open/creat` (legacy syscalle, których glibc nie używa). Reguły **sieciowe** (`connect`/`sendto`) **firują tylko z hostowego namespace** (proc=falco, falcoctl) — connect z workloadowych podów (`innocent-app`, `nc`, `curl`) jest **niewidoczny** dla Falco BPF na tym kernelu |
 | **K3d/Kind na macOS Intel (amd64)** | `modern_ebpf` zwykle działa pełniej; fallback `ebpf` (legacy, wymaga probe download) |
 | **K3d/Kind na Windows WSL2** | `modern_ebpf` (WSL2 kernel ma BTF) |
 | Dedicated kernel-module install | `kmod` — rzadko używane, wymaga `apt-get install falco-kernel-headers` |
 
 **Jeśli `modern_ebpf` nie startuje**: sprawdź `kubectl logs -n falco <falco-pod>` — błąd "BPF program load failed" → spróbuj `ebpf` (legacy). Custom syscall rules mogą nie działać na bardzo starych kernelach.
 
-> **macOS Apple Silicon — known limitation:** Część 3 ćwiczenia (zapis do `/etc/passwd` triggeruje custom rule "Write to /etc") **nie zadziała** na Docker Desktop arm64 — nawet wbudowane reguły plikowe nie firują z powodu BPF tracepoint failures w LinuxKit. Sprawdzono 2026-04 na Falco 0.43.1. Dla pełnej walidacji ćwiczenia użyj Linuksa, WSL2, lub maszyny x86. Część 4 (egress 4444 przez `nc`) **działa** na każdej platformie — używa innych syscalli (connect).
+> **macOS Apple Silicon — known limitation:** Część 4 ćwiczenia (egress 4444 z workloadowego pod) **nie zafiruje** na Docker Desktop arm64. Falco widzi connect/sendto z własnego pod-a (Falco daemon → DNS, K8s API), ale syscall connect z kontenera użytkownika (`innocent-app`) nie pojawia się w buforze BPF. Sprawdzono empirycznie 2026-04 na Falco 0.43.1, kernel 6.12.76-linuxkit. Część 3 (zapis do `/etc/passwd`) **działa** — `openat` jest hookowany poprawnie. Dla pełnej walidacji Części 4 użyj Linuksa / WSL2 / maszyny x86 / klastra w chmurze.
 
 ## Prereqs
 - K3s / Kind / K3d cluster

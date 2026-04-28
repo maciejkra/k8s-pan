@@ -87,17 +87,55 @@ Spectre/Meltdown: eBPF JIT jest wyłączony na niektórych hostach (`net.core.bp
 # Falco działa, custom rules loaded
 kubectl -n falco logs -l app.kubernetes.io/name=falco --tail=100 | grep -Ei "rule.*custom|loaded"
 
-# Trigger built-in
+# Trigger built-in (UWAGA: wymaga TTY — bez `-it` rule "Terminal shell" nie firuje)
 kubectl apply -f trigger-pod.yaml
 kubectl wait --for=condition=ready pod/innocent-app --timeout=30s
-kubectl exec innocent-app -- sh -c "echo x" 2>/dev/null
+kubectl exec -it innocent-app -- sh
 # W logach Falco: "Terminal shell in container" (Notice)
+exit
 
-# Trigger custom
+# Trigger custom — /etc write
 kubectl exec innocent-app -- sh -c "echo malicious >> /etc/hosts"
+sleep 3
 kubectl logs -n falco -l app.kubernetes.io/name=falco --tail=30 | grep -i "Custom rule"
 # "Custom rule: zapis do /etc wewnątrz kontenera (user=root file=/etc/hosts proc=sh ...)"
+
+# Trigger custom — egress 4444 (na Linux/x86; pomijaj na Docker Desktop arm64)
+kubectl exec innocent-app -- sh -c "nc -w 2 192.0.2.5 4444 || true"
+kubectl logs -n falco -l app.kubernetes.io/name=falco --tail=30 | grep -i "Podejrzane"
 ```
+
+### Dlaczego `evt.type=open` nie wystarczy
+
+Modern glibc i busybox NIE wywołują surowego `open(2)` — używają `openat(2)` (z `AT_FDCWD` jako pierwszy argument). Reguła z samym `evt.type=open` przepuści wszystko.
+
+```bash
+# Empiryczny dowód — strace busybox sh:
+strace -f -e trace=open,openat sh -c "echo x >> /etc/passwd" 2>&1 | head -5
+# openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+# openat(AT_FDCWD, "/lib/ld-musl-aarch64.so.1", ...) = 3
+# openat(AT_FDCWD, "/etc/passwd", O_WRONLY|O_CREAT|O_APPEND, 0666) = 3
+```
+
+Reguła `evt.type in (open, openat, openat2, creat) and evt.is_open_write=true` pokrywa wszystkie warianty.
+
+### Dlaczego `fd.sport` (NIE `fd.rport` ani `fd.lport`)
+
+Falco semantyka FD network fields:
+
+| Pole | Znaczenie |
+|---|---|
+| `fd.cport` | port klienta (strony inicjującej połączenie) |
+| `fd.sport` | port serwera (strony przyjmującej połączenie) |
+| `fd.lport` | port "lokalny" — perspektywa zależy od kontekstu obserwacji FD, **nieintuicyjnie odwrócona** dla niektórych eventów |
+| `fd.rport` | port "zdalny" — analogicznie |
+
+Dla outbound `connect` z kontenera do `1.2.3.4:4444`: kontener=client, destination=server.
+- `fd.cport` = ephemeral source port
+- **`fd.sport` = 4444 ← stabilne dopasowanie**
+- `fd.lport`/`fd.rport` mogą być odwrócone w zależności od kierunku eventu (`evt.dir=<` vs `>`)
+
+Empiryczny test debug rule pokazuje, że Falco DNS lookup raportuje `lport=53 sport=53` — server port pojawia się w obu polach, ale `cport`/`sport` są jednoznaczne.
 
 ## Troubleshooting
 
@@ -123,15 +161,23 @@ kubectl logs -n falco -l app.kubernetes.io/name=falco | grep -i "ruleset\|parse\
 
 Częste: złe indentowanie YAML w `--set-file` (tabs vs spaces).
 
-### macOS + modern_ebpf nie działa
+### macOS arm64 + modern_ebpf — limitacje LinuxKit
+
+LinuxKit kernel 6.12 na Docker Desktop arm64 ma **częściowe** wsparcie BPF tracepointów. Status zaobserwowany na Falco 0.43.1:
+
+| Tracepoint | Status |
+|---|---|
+| `sys_enter_open`, `sys_enter_creat` | brak (`libbpf: failed to determine tracepoint`) — nie problem, glibc/busybox używają `openat` |
+| `sys_enter_openat`, `sys_enter_openat2` | działa — reguły plikowe firują |
+| `sys_enter_execve` | działa — reguła "Terminal shell in container" firuje (wymaga TTY) |
+| `sys_enter_connect` (z host namespace) | działa — Falco daemon, falcoctl, kubelet są obserwowane |
+| `sys_enter_connect` (z workload pod) | **NIE działa** — connect z `innocent-app` (testowane: nc, curl, wget) niewidoczny w buforze BPF |
+
+**Workaround dla Części 4 (egress detection):** użyj klastra na Linux/WSL2/x86. Ćwiczenie Część 3 (`/etc` write) działa na arm64.
 
 ```bash
-# W logach:
-# "Failed to open engine 'modern_ebpf': ...no BTF"
-```
-
-Docker Desktop na macOS używa LinuxKit VM z kernelem 6.x (od 2024). Zwykle BTF jest. Jeśli nie:
-```bash
+# Jeśli modern_ebpf nie startuje wcale (np. brak BTF):
+# W logach: "Failed to open engine 'modern_ebpf': ...no BTF"
 helm upgrade falco falcosecurity/falco --reuse-values --set driver.kind=ebpf
 # Falco pobierze probe-file matching kernel, wolniej ale działa
 ```

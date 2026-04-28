@@ -68,7 +68,7 @@ Spodziewane:
 ... Warning Custom rule: zapis do /etc wewnątrz kontenera (user=root file=/etc/passwd proc=sh container=app ...)
 ```
 
-> **macOS Apple Silicon / Docker Desktop:** Część 3 może nie firować — LinuxKit kernel ma uszkodzone tracepointy BPF dla `open`/`creat`, więc Falco nie wykrywa zapisu do plików (nawet wbudowane reguły plikowe nie działają). Reguły **sieciowe** (Część 4) firują normalnie. Na Linuxie / EC2 / WSL2 — Część 3 działa.
+> **Uwaga o regule:** `evt.type=open` (sam, bez wariantów) NIE wykryje zapisu busybox/glibc — modern Linux używa `openat`. Reguła w `custom-rules.yaml` używa `evt.type in (open, openat, openat2, creat)` — to jest WAŻNE.
 
 ## Część 4 — Trigger drugiej custom rule (connect 4444)
 
@@ -80,8 +80,10 @@ kubectl exec innocent-app -- sh -c "nc -w 2 192.0.2.5 4444 || true"
 
 Spodziewane w logach Falco:
 ```
-... Critical Podejrzane wyjście TCP na port 4444 (container=app dest=192.0.2.5) ...
+... Critical Podejrzane wyjście TCP na port 4444 (container=app dest=192.0.2.5:4444) ...
 ```
+
+> **macOS Apple Silicon / Docker Desktop arm64:** Część 4 NIE zafiruje. LinuxKit kernel poprawnie hookuje `connect`/`sendto` dla pod-ów hostowych (Falco daemon, falcoctl), ale syscall connect z workloadowego kontenera (innocent-app) jest niewidoczny w buforze BPF. Sprawdzono empirycznie z `nc`, `curl` i `wget` — żaden nie produkuje eventu. Na Linux / WSL2 / x86 — Część 4 działa. Część 3 (`/etc`) firuje na ARM64 normalnie.
 
 ## Część 5 — Integracja z Slack przez Falcosidekick (bonus)
 

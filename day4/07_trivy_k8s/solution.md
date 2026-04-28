@@ -2,18 +2,21 @@
 
 ## Spodziewany VulnerabilityReport
 
+Dla obrazu `vulhub/log4j:2.8.1` (release 2017) Trivy znajdzie ~30 CVE Critical + ~110 High — Java 8 JRE + log4j 2.8.1 mają dekadę nienałożonych łatek:
+
 ```yaml
 apiVersion: aquasecurity.github.io/v1alpha1
 kind: VulnerabilityReport
 metadata:
-  name: replicaset-log4shell-vuln-xxx-app
+  name: replicaset-log4shell-vuln-xxxxxx-app
   namespace: default
 report:
   summary:
-    criticalCount: 5
-    highCount: 12
-    mediumCount: 8
-    lowCount: 3
+    criticalCount: 32
+    highCount: 114
+    mediumCount: 169
+    lowCount: 76
+    unknownCount: 13
   vulnerabilities:
     - vulnerabilityID: CVE-2021-44228
       severity: CRITICAL
@@ -77,6 +80,31 @@ kubectl get vulnerabilityreports -A -o json | \
   jq -r '.items[].report.vulnerabilities[].vulnerabilityID' | \
   sort | uniq -c | sort -rn | head -10
 ```
+
+## Troubleshooting
+
+### `No resources found` mimo że scany kończą się sukcesem
+
+Operator nie potrafi sparsować statusu nowoczesnego K8s Job:
+```bash
+kubectl logs -n trivy-system deployment/trivy-operator | grep -i "unrecognized scan job condition"
+# error: unrecognized scan job condition: SuccessCriteriaMet
+```
+**Fix:** chart `0.32.1+` (operator binary 0.30.1+). Starsze (≤0.20.x → binary 0.18.x) nie znają warunku `SuccessCriteriaMet` dodanego w K8s 1.31. Scan kończy się sukcesem, ale reconcile fails → `VulnerabilityReport` nigdy nie zostaje utworzony.
+
+### Scan jobs `OOMKilled`
+
+```bash
+kubectl get pods -n trivy-system | grep OOMKilled
+```
+Default `trivy.resources.limits.memory=500M`. Dla obrazów Java/Spring/.NET/distroless+JVM (np. `vulhub/log4j`) Trivy potrzebuje rozpakować i zindeksować >500MB warstw. Bumpuj do `1G` w install command. Dla bardzo dużych obrazów → `2G`.
+
+### Operator w `CrashLoopBackOff` z `liveness probe failed`
+
+```
+Warning Unhealthy ... Liveness probe failed: Get "http://...:9090/healthz/": dial tcp ...:9090: connect: connection refused
+```
+Operator startuje cache-sync wszystkich K8s resources (ClusterRoles, RBAC, DaemonSets, …). Na klastrze z dużą liczbą obiektów (Falco DS + Gatekeeper + vault + csi-driver = setki) trwa to 60-120s. Default container nie ma `requests/limits` = BestEffort → kernel ubija przy memory pressure, a liveness probe odpala po 100s. **Fix:** explicit `operator.resources` (Burstable QoS, ~256-512Mi) w install command.
 
 ## Cross-link
 - D1/04 — Trivy CLI (build time)

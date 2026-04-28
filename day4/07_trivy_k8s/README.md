@@ -15,7 +15,7 @@ W D1/04 skanowaliśmy obrazy **przed** deployem (CI). To nie wystarczy:
 - raporty są query-walne przez `kubectl` i Grafanę
 
 ## Prereqs
-- K3d cluster
+- K3d / Kind cluster
 
 ## Zadanie
 
@@ -26,16 +26,26 @@ W D1/04 skanowaliśmy obrazy **przed** deployem (CI). To nie wystarczy:
    helm install trivy-operator aqua/trivy-operator \
      -n trivy-system --create-namespace \
      --set="trivy.ignoreUnfixed=true" \
-     --version 0.20.6
-   kubectl wait --for=condition=Available -n trivy-system deployment/trivy-operator --timeout=2m
+     --set="trivy.resources.requests.memory=512M" \
+     --set="trivy.resources.limits.memory=1G" \
+     --set="operator.resources.requests.memory=256Mi" \
+     --set="operator.resources.limits.memory=512Mi" \
+     --set="operator.builtInTrivyServer=false" \
+     --version 0.32.1
+   kubectl wait --for=condition=Available -n trivy-system deployment/trivy-operator --timeout=3m
    ```
+
+   > **Dlaczego custom limits + chart 0.32.1:**
+   > - Default scan job ma `memory.limit=500M` — za mało dla obrazów Java/.NET (Log4Shell vulhub, distroless+JVM). OOMKilled scany NIE produkują VulnerabilityReport. Bumpujemy do 1G.
+   > - Default operator deployment NIE ma `resources` (BestEffort QoS). Przy startupie cache sync z dużą liczbą resources w klastrze (Falco DS, Gatekeeper, vault, csi-driver, …) trwa >100s i liveness probe go ubija → CrashLoopBackOff. Eksplicitne `requests/limits` + Burstable QoS = stabilniejszy start.
+   > - Chart `0.32.1` (operator binary 0.30.1) jest wymagany dla K8s 1.31+. Starsze (0.20.x → binary 0.18.x) nie znają warunku `SuccessCriteriaMet` na Job — reconcile fails z `unrecognized scan job condition`, scan kończy się sukcesem ale VulnerabilityReport nigdy nie powstaje.
 
 2. Wdroż celowo podatną aplikację:
    ```bash
    kubectl apply -f vulnerable-app.yaml
    ```
 
-3. Czekaj aż Trivy Operator zeskanuje (1-3 min):
+3. Czekaj aż Trivy Operator zeskanuje (2-4 min — pierwszy run pobiera Trivy DB ~150MB):
    ```bash
    kubectl get vulnerabilityreports -A -w
    ```

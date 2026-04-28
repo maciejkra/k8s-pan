@@ -7,8 +7,12 @@
 
 - rule: Custom - Write to /etc
   desc: Wykrywa zapis do /etc/ wewnątrz kontenera (typowy backdoor)
+  # evt.type musi obejmować wszystkie warianty open — busybox/glibc używają `openat`,
+  # nie surowego `open`. Filtrowanie tylko na `evt.type=open` nie wykryje nic na
+  # nowoczesnym Linuksie.
   condition: >
-    evt.type=open and evt.is_open_write=true
+    evt.type in (open, openat, openat2, creat)
+    and evt.is_open_write=true
     and fd.name startswith /etc/
     and container
     and not proc.name in (allowed_etc_writers)
@@ -20,12 +24,15 @@
 
 - rule: Custom - Outbound connection to suspicious port
   desc: Detekcja egress na port 4444 (Metasploit default)
+  # `fd.sport` w Falco = "server port" — port strony przyjmującej połączenie.
+  # Dla outbound connect z kontenera to port docelowy. NIE używaj `fd.lport`/`fd.rport`
+  # — ich semantyka zależy od perspektywy obserwacji FD i bywa odwrócona.
   condition: >
     evt.type in (connect, sendto)
     and fd.l4proto=tcp
     and fd.sport=4444
     and container
   output: >
-    Podejrzane wyjście TCP na port 4444 (container=%container.name dest=%fd.rip)
+    Podejrzane wyjście TCP na port 4444 (container=%container.name dest=%fd.sip:%fd.sport)
   priority: CRITICAL
   tags: [custom, network, mitre_command_and_control]
