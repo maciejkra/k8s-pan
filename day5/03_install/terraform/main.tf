@@ -1,49 +1,49 @@
 resource "digitalocean_loadbalancer" "control_plane_lb" {
-  name        = "control-plane-lb"
-  region      = "fra1"
-  
+  name   = "control-plane-lb"
+  region = "fra1"
+
   forwarding_rule {
-    entry_protocol   = "tcp"
-    entry_port       = 443
-    target_protocol  = "tcp"
-    target_port      = 443
+    entry_protocol  = "tcp"
+    entry_port      = 443
+    target_protocol = "tcp"
+    target_port     = 443
   }
 
   forwarding_rule {
-    entry_protocol   = "tcp"
-    entry_port       = 6443
-    target_protocol  = "tcp"
-    target_port      = 6443
+    entry_protocol  = "tcp"
+    entry_port      = 6443
+    target_protocol = "tcp"
+    target_port     = 6443
   }
 
   forwarding_rule {
-    entry_protocol   = "tcp"
-    entry_port       = 80
-    target_protocol  = "tcp"
-    target_port      = 80
+    entry_protocol  = "tcp"
+    entry_port      = 80
+    target_protocol = "tcp"
+    target_port     = 80
   }
 
   healthcheck {
-    protocol              = "tcp"
-    port                  = 6443
-    check_interval_seconds = 5
+    protocol                 = "tcp"
+    port                     = 6443
+    check_interval_seconds   = 5
     response_timeout_seconds = 3
-    healthy_threshold     = 3
-    unhealthy_threshold   = 3
+    healthy_threshold        = 3
+    unhealthy_threshold      = 3
   }
 
   droplet_tag = "control-plane"
 }
 
 resource "digitalocean_droplet" "cpnode" {
-  count              = 3
-  name               = "cpnode${count.index + 1}"
-  image              = "ubuntu-24-04-x64"
-  region             = "fra1"
-  size               = "s-2vcpu-4gb"
-  tags               = ["control-plane"]
+  count  = 3
+  name   = "cpnode${count.index + 1}"
+  image  = "ubuntu-24-04-x64"
+  region = "fra1"
+  size   = "s-2vcpu-4gb"
+  tags   = ["control-plane"]
   ssh_keys = [
-      data.digitalocean_ssh_key.terraform.id
+    data.digitalocean_ssh_key.terraform.id
   ]
 
   provisioner "remote-exec" {
@@ -63,30 +63,6 @@ resource "digitalocean_droplet" "cpnode" {
   provisioner "file" {
     content     = file("../prepare.sh")
     destination = "/root/prepare.sh"
-    connection {
-      type        = "ssh"
-      host        = self.ipv4_address
-      user        = "root"
-      private_key = file(var.pvt_key)
-    }
-  }
-
-  provisioner "file" {
-    source      = "../kubeadm-config.yaml"
-    destination = "/root/kubeadm-config.yaml"
-
-    connection {
-      type        = "ssh"
-      host        = self.ipv4_address
-      user        = "root"
-      private_key = file(var.pvt_key)
-    }
-  }
-
-  provisioner "file" {
-    source      = "../kube-vip-static-pod.yaml"
-    destination = "/root/kube-vip-static-pod.yaml"
-
     connection {
       type        = "ssh"
       host        = self.ipv4_address
@@ -131,10 +107,10 @@ resource "digitalocean_droplet" "cpnode" {
 
   provisioner "remote-exec" {
     # Inline script with retry logic
-  inline = [
-    "sleep 15; sudo bash /root/prepare.sh"
-  ]
-    
+    inline = [
+      "sleep 15; sudo bash /root/prepare.sh"
+    ]
+
     connection {
       type        = "ssh"
       host        = self.ipv4_address
@@ -146,14 +122,14 @@ resource "digitalocean_droplet" "cpnode" {
 }
 
 resource "digitalocean_droplet" "knode" {
-  count              = 3
-  name               = "knode${count.index + 1}"
-  image              = "ubuntu-24-04-x64"
-  region             = "fra1"
-  size               = "s-2vcpu-4gb"
-  tags               = ["worker"]
+  count  = 3
+  name   = "knode${count.index + 1}"
+  image  = "ubuntu-24-04-x64"
+  region = "fra1"
+  size   = "s-2vcpu-4gb"
+  tags   = ["worker"]
   ssh_keys = [
-      data.digitalocean_ssh_key.terraform.id
+    data.digitalocean_ssh_key.terraform.id
   ]
 
 
@@ -184,13 +160,85 @@ resource "digitalocean_droplet" "knode" {
 
   provisioner "remote-exec" {
     # Inline script with retry logic
-  inline = [
-    "sleep 15; sudo bash /root/prepare.sh"
-  ]
-    
+    inline = [
+      "sleep 15; sudo bash /root/prepare.sh"
+    ]
+
     connection {
       type        = "ssh"
       host        = self.ipv4_address
+      user        = "root"
+      private_key = file(var.pvt_key)
+    }
+  }
+}
+
+variable "vip_interface" {
+  description = "Network interface dla kube-vip. Na DigitalOcean Ubuntu 24.04 oba IP (public/private) są na eth0."
+  type        = string
+  default     = "eth0"
+}
+
+variable "vip_address" {
+  description = "VIP kube-vip (demo na DO — VPC blokuje GARP, więc nie programuje routingu)."
+  type        = string
+  default     = "10.135.0.100"
+}
+
+# Renderuje kubeadm-config.yaml per CP node z poprawnym advertiseAddress + certSANs.
+resource "null_resource" "cp_kubeadm_config" {
+  count = 3
+  depends_on = [
+    digitalocean_droplet.cpnode,
+    digitalocean_loadbalancer.control_plane_lb,
+  ]
+
+  triggers = {
+    # Re-renderuje gdy IP się zmieni
+    advertise = digitalocean_droplet.cpnode[count.index].ipv4_address_private
+    lb_ip     = digitalocean_loadbalancer.control_plane_lb.ip
+  }
+
+  provisioner "file" {
+    content = templatefile("${path.module}/kubeadm-config.yaml.tpl", {
+      advertise_address = digitalocean_droplet.cpnode[count.index].ipv4_address_private
+      cert_sans = concat(
+        digitalocean_droplet.cpnode.*.ipv4_address_private,
+        digitalocean_droplet.cpnode.*.ipv4_address,
+        [digitalocean_loadbalancer.control_plane_lb.ip],
+      )
+    })
+    destination = "/root/kubeadm-config.yaml"
+
+    connection {
+      type        = "ssh"
+      host        = digitalocean_droplet.cpnode[count.index].ipv4_address
+      user        = "root"
+      private_key = file(var.pvt_key)
+    }
+  }
+}
+
+# Renderuje kube-vip-static-pod.yaml per CP node (vip_interface, vip_address).
+resource "null_resource" "cp_kube_vip" {
+  count      = 3
+  depends_on = [digitalocean_droplet.cpnode]
+
+  triggers = {
+    iface   = var.vip_interface
+    address = var.vip_address
+  }
+
+  provisioner "file" {
+    content = templatefile("${path.module}/kube-vip-static-pod.yaml.tpl", {
+      vip_interface = var.vip_interface
+      vip_address   = var.vip_address
+    })
+    destination = "/root/kube-vip-static-pod.yaml"
+
+    connection {
+      type        = "ssh"
+      host        = digitalocean_droplet.cpnode[count.index].ipv4_address
       user        = "root"
       private_key = file(var.pvt_key)
     }

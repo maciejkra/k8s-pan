@@ -39,37 +39,41 @@ ssh user@10.135.0.5     # cpnode1
 # Hostname
 sudo hostnamectl set-hostname cpnode1
 
-# /etc/hosts (wklej content z hosts file)
-sudo bash -c 'cat > /etc/hosts' <<'EOF'
-127.0.0.1 localhost
-10.135.0.5 cpnode1.example.com cpnode1
-10.135.0.7 cpnode2.example.com cpnode2
-10.135.0.3 cpnode3.example.com cpnode3
-10.135.0.2 knode1.example.com knode1
-10.135.0.6 knode2.example.com knode2
-10.135.0.4 knode3.example.com knode3
-10.135.0.100 kubeapi.example.com kubeapi
-EOF
+# /etc/hosts — Terraform na DO już dopisał wpisy (sprawdź: `cat /etc/hosts`).
+# Bare-metal: wklej zawartość pliku ./hosts, podstaw realne IP swoich VM:
+# sudo bash -c 'cat >> /etc/hosts' <<'EOF'
+# 10.135.0.5 cpnode1.example.com cpnode1
+# 10.135.0.7 cpnode2.example.com cpnode2
+# 10.135.0.3 cpnode3.example.com cpnode3
+# 10.135.0.2 knode1.example.com knode1
+# 10.135.0.6 knode2.example.com knode2
+# 10.135.0.4 knode3.example.com knode3
+# 10.135.0.100 kubeapi.example.com kubeapi
+# EOF
+cat /etc/hosts
 
-# Dodaj VIP tymczasowo na tym node (żeby kubeadm init mógł dotrzeć do siebie przez VIP)
-# ZMIEŃ `eth1` na swój network interface (`ip a` pokaże nazwy)
-sudo ip a a dev eth1 10.135.0.100/32
+# (TYLKO bare-metal/Multipass) Dodaj VIP tymczasowo na tym node, żeby kubeadm init dotarł
+# do siebie przez VIP zanim kube-vip ustabilizuje leader election. Na DO bez sensu (VPC
+# blokuje GARP — endpointem jest DO LB, nie VIP). ZMIEŃ interface wg `ip a`.
+# sudo ip a a dev eth0 10.135.0.100/32
 
-# Skopiuj kubernetes/* do /etc/kubernetes/ (audit + encryption)
-sudo mkdir -p /etc/kubernetes
-sudo cp kubernetes/audit-policy.yaml /etc/kubernetes/
-sudo cp kubernetes/enc.yaml /etc/kubernetes/
+# audit-policy.yaml + enc.yaml — na DO terraform skopiował już do /etc/kubernetes/ (sprawdź).
+# Bare-metal: scp z repo, potem:
+#   sudo mkdir -p /etc/kubernetes
+#   sudo cp kubernetes/audit-policy.yaml kubernetes/enc.yaml /etc/kubernetes/
 sudo mkdir -p /var/log/kubernetes/audit
 
-# Kluczowe: kube-vip jako STATIC POD, deploy PRZED kubeadm init
-# Edytuj kube-vip-static-pod.yaml:
-#  - vip_interface: eth1 → twoj interface
-#  - address: 10.135.0.100 → twoj VIP
+# Kluczowe: kube-vip jako STATIC POD, deploy PRZED kubeadm init.
+# Terraform zrenderował już /root/kube-vip-static-pod.yaml (vip_interface=eth0 dla DO).
+# Bare-metal: w pliku kube-vip-static-pod.yaml edytujesz vip_interface (`ip a`) i address.
 sudo mkdir -p /etc/kubernetes/manifests
-sudo cp kube-vip-static-pod.yaml /etc/kubernetes/manifests/kube-vip.yaml
+sudo cp /root/kube-vip-static-pod.yaml /etc/kubernetes/manifests/kube-vip.yaml
 
-# Init klastra (Cilium zastępuje kube-proxy — skip faze)
-sudo kubeadm init --config ./kubeadm-config.yaml --upload-certs \
+# Init klastra (Cilium zastępuje kube-proxy — skip faze).
+# Terraform zrenderował /root/kubeadm-config.yaml z prawidłowym advertiseAddress
+# (prywatny IP cpnode1) + certSANs (publiczne IP CP + IP DO LB). Bare-metal: edytuj
+# advertiseAddress i certSANs przed odpaleniem.
+sudo kubeadm init --config /root/kubeadm-config.yaml --upload-certs \
   --skip-phases=addon/kube-proxy
 
 # ⚠️ ZACHOWAJ wyjście — są tam 2 komendy kubeadm join (dla CP i worker)!
@@ -116,15 +120,11 @@ ssh user@10.135.0.7
 sudo hostnamectl set-hostname cpnode2
 # ... kopia /etc/hosts ...
 
-# KLUCZOWE: skopiuj static pod manifest kube-vip (kubeadm join tego nie robi!)
+# KLUCZOWE: kube-vip jako STATIC POD musi być w /etc/kubernetes/manifests/ PRZED join.
+# Terraform już skopiował na cpnode2/3 plik do /root/ + audit/enc do /etc/kubernetes/.
+# Bare-metal: scp z cpnode1 zarówno kube-vip-static-pod.yaml jak audit-policy.yaml + enc.yaml.
 sudo mkdir -p /etc/kubernetes/manifests
-scp cpnode1:/etc/kubernetes/manifests/kube-vip.yaml /tmp/
-sudo cp /tmp/kube-vip.yaml /etc/kubernetes/manifests/
-
-# Skopiuj też audit/encryption files
-scp cpnode1:/etc/kubernetes/audit-policy.yaml /tmp/
-scp cpnode1:/etc/kubernetes/enc.yaml /tmp/
-sudo cp /tmp/audit-policy.yaml /tmp/enc.yaml /etc/kubernetes/
+sudo cp /root/kube-vip-static-pod.yaml /etc/kubernetes/manifests/kube-vip.yaml
 
 # Join jako CP (użyj komendy z wyjścia kubeadm init na cpnode1)
 sudo kubeadm join kubeapi.example.com:6443 \
