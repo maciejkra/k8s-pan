@@ -13,6 +13,11 @@ spec:
       args:
         - manager
       env:
+        # Wymusza ścieżkę kubeconfig — bez tego kube-vip v1.x próbuje in-cluster
+        # discovery przez `https://kubernetes:6443` (default Go client) i fallbackuje
+        # do DNS lookup hostname `kubernetes` zamiast użyć /etc/kubernetes/admin.conf.
+        - name: KUBECONFIG
+          value: "/etc/kubernetes/admin.conf"
         - name: vip_arp
           value: "true"
         - name: port
