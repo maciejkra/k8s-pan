@@ -80,10 +80,10 @@ kubectl exec innocent-app -- sh -c "nc -w 2 192.0.2.5 4444 || true"
 
 Spodziewane w logach Falco:
 ```
-... Critical Podejrzane wyjście TCP na port 4444 (container=app dest=192.0.2.5:4444) ...
+... Critical Podejrzane wyjście na port 4444 (proc=nc container=app dest=192.0.2.5:4444 res=ERESTARTSYS) ...
 ```
 
-> **macOS Apple Silicon / Docker Desktop arm64:** Część 4 NIE zafiruje. LinuxKit kernel poprawnie hookuje `connect`/`sendto` dla pod-ów hostowych (Falco daemon, falcoctl), ale syscall connect z workloadowego kontenera (innocent-app) jest niewidoczny w buforze BPF — testowane z `nc`, `curl` i `wget`. Na Linux / WSL2 / x86 — Część 4 działa. Część 3 (`/etc`) firuje na ARM64 normalnie.
+> **Uwaga o regule:** match na `evt.arg.addr endswith :4444` (raw destination z syscall connect), NIE na `fd.sport`. Pola `fd.*` są populowane dopiero po udanym connect — dla nc/curl/wget do nieosiągalnego hosta connect zwraca błąd, `fd.*` zostaje `<NA>`, reguła oparta na `fd.sport` nigdy nie firuje. `evt.arg.addr` zawiera `IP:PORT` zawsze.
 
 ## Część 5 — Integracja z Slack przez Falcosidekick (bonus)
 

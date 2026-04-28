@@ -24,15 +24,17 @@
 
 - rule: Custom - Outbound connection to suspicious port
   desc: Detekcja egress na port 4444 (Metasploit default)
-  # `fd.sport` w Falco = "server port" — port strony przyjmującej połączenie.
-  # Dla outbound connect z kontenera to port docelowy. NIE używaj `fd.lport`/`fd.rport`
-  # — ich semantyka zależy od perspektywy obserwacji FD i bywa odwrócona.
+  # Match na `evt.arg.addr` (raw destination z syscall connect), NIE na `fd.sport`
+  # / `fd.rport`. Pola `fd.*` populowane są dopiero gdy connect zakończy się
+  # sukcesem; dla nc/curl/wget z timeout do nieosiągalnego hosta connect zwraca
+  # ERESTARTSYS — `fd.*` zostaje <NA>, reguła nigdy nie firuje. `evt.arg.addr`
+  # zawiera "IP:PORT" zawsze, niezależnie od wyniku connect.
   condition: >
-    evt.type in (connect, sendto)
-    and fd.l4proto=tcp
-    and fd.sport=4444
+    evt.type=connect and evt.dir=<
     and container
+    and evt.arg.addr endswith :4444
   output: >
-    Podejrzane wyjście TCP na port 4444 (container=%container.name dest=%fd.sip:%fd.sport)
+    Podejrzane wyjście na port 4444
+    (proc=%proc.name container=%container.name dest=%evt.arg.addr res=%evt.res)
   priority: CRITICAL
   tags: [custom, network, mitre_command_and_control]

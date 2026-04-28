@@ -119,23 +119,22 @@ strace -f -e trace=open,openat sh -c "echo x >> /etc/passwd" 2>&1 | head -5
 
 Reguła `evt.type in (open, openat, openat2, creat) and evt.is_open_write=true` pokrywa wszystkie warianty.
 
-### Dlaczego `fd.sport` (NIE `fd.rport` ani `fd.lport`)
+### Dlaczego `evt.arg.addr` (NIE `fd.sport` / `fd.rport` / `fd.lport`)
 
-Falco semantyka FD network fields:
+Pola `fd.*` są populowane dopiero **po udanym** `connect` — kernel wypełnia socket struct po sukcesie. Dla wykrywania egress do nieosiągalnego portu (typowy scenariusz testu / próby exfiltracji do martwego hosta) connect zwraca:
+- `ERESTARTSYS` (-512) — przerwany sygnałem (np. `nc -w 2` timeout)
+- `ECONNREFUSED` / `EHOSTUNREACH` — host odrzuca
 
-| Pole | Znaczenie |
-|---|---|
-| `fd.cport` | port klienta (strony inicjującej połączenie) |
-| `fd.sport` | port serwera (strony przyjmującej połączenie) |
-| `fd.lport` | port "lokalny" — perspektywa zależy od kontekstu obserwacji FD, **nieintuicyjnie odwrócona** dla niektórych eventów |
-| `fd.rport` | port "zdalny" — analogicznie |
+W tych przypadkach `fd.sport`/`fd.rport`/`fd.lport`/`fd.cport` są **`<NA>`**, a tuple `IP:PORT->IP:PORT` puste. Reguła z filtrem `fd.sport=4444` **nigdy nie zafiruje**.
 
-Dla outbound `connect` z kontenera do `1.2.3.4:4444`: kontener=client, destination=server.
-- `fd.cport` = ephemeral source port
-- **`fd.sport` = 4444 ← stabilne dopasowanie**
-- `fd.lport`/`fd.rport` mogą być odwrócone w zależności od kierunku eventu (`evt.dir=<` vs `>`)
+`evt.arg.addr` zawiera surowy adres docelowy podany do syscall `connect(fd, sockaddr, ...)` — populowany **przed** connect, niezależnie od rezultatu. Format: `IP:PORT` (lub `[IPv6]:PORT`). Match przez `endswith :4444` jest stabilny.
 
-Empiryczny test debug rule pokazuje, że Falco DNS lookup raportuje `lport=53 sport=53` — server port pojawia się w obu polach, ale `cport`/`sport` są jednoznaczne.
+Empiryczny dowód (debug rule, nc → 8.8.8.8:4444 z timeout):
+```
+DBG proc=nc evt.dir=< args=res=-512(ERESTARTSYS) tuple=NULL
+    addr=8.8.8.8:4444 lport=<NA> rport=<NA> sport=<NA> cport=<NA> l4proto=<NA>
+```
+`evt.arg.addr=8.8.8.8:4444` — dostępne. `fd.*` — wszystkie `<NA>`.
 
 ## Troubleshooting
 
@@ -170,10 +169,7 @@ LinuxKit kernel na Docker Desktop arm64 ma **częściowe** wsparcie BPF tracepoi
 | `sys_enter_open`, `sys_enter_creat` | brak (`libbpf: failed to determine tracepoint`) — nie problem, glibc/busybox używają `openat` |
 | `sys_enter_openat`, `sys_enter_openat2` | działa — reguły plikowe firują |
 | `sys_enter_execve` | działa — reguła "Terminal shell in container" firuje (wymaga TTY) |
-| `sys_enter_connect` (z host namespace) | działa — Falco daemon, falcoctl, kubelet są obserwowane |
-| `sys_enter_connect` (z workload pod) | **NIE działa** — connect z `innocent-app` (testowane: nc, curl, wget) niewidoczny w buforze BPF |
-
-**Workaround dla Części 4 (egress detection):** użyj klastra na Linux/WSL2/x86. Ćwiczenie Część 3 (`/etc` write) działa na arm64.
+| `sys_enter_connect` | działa — reguła egress 4444 firuje pod warunkiem matchowania `evt.arg.addr` (NIE `fd.sport` / `fd.rport`) |
 
 ```bash
 # Jeśli modern_ebpf nie startuje wcale (np. brak BTF):
