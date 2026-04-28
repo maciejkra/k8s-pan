@@ -92,16 +92,19 @@ cilium status --wait
 
 ## Część 4 — Join pozostałych 2 CP node'ów
 
-Na DO Terraform już ułożył pliki na cpnode2/3 (kube-vip manifest, audit-policy, enc.yaml, kubeadm-config). Wystarczy SSH i join.
+Na DO Terraform już ułożył pliki na cpnode2/3 (kube-vip manifest, audit-policy, enc.yaml, kubeadm-config) oraz `/root/private_ip` z prywatnym VPC IP node'a.
+
+**Ważne**: `--apiserver-advertise-address=$(cat /root/private_ip)` jest **wymagana** na DO. Bez niej kubeadm wybierze publiczny IP (default route eth0), apiserver i etcd peer staną na publicznym IP, etcd peer cert pokryje tylko publiczny — `kubeadm join` zawiśnie na `etcdserver: can only promote a learner member which is in sync with leader`.
 
 ```bash
 ssh root@<cpnode2-public-ip>
 
-# Join jako CP (komenda z wyjścia `kubeadm init` na cpnode1)
+# Join jako CP (komenda z wyjścia `kubeadm init` na cpnode1, z dodanym --apiserver-advertise-address)
 sudo kubeadm join kubeapi.example.com:6443 \
   --token <your-token> \
   --discovery-token-ca-cert-hash sha256:<your-hash> \
-  --control-plane --certificate-key <your-cert-key>
+  --control-plane --certificate-key <your-cert-key> \
+  --apiserver-advertise-address=$(cat /root/private_ip)
 ```
 
 Powtórz dla cpnode3.
@@ -110,6 +113,39 @@ Powtórz dla cpnode3.
 - hostname + `/etc/hosts` jak w Części 2
 - `scp cpnode1:/etc/kubernetes/manifests/kube-vip.yaml /etc/kubernetes/manifests/`
 - `scp cpnode1:/etc/kubernetes/audit-policy.yaml cpnode1:/etc/kubernetes/enc.yaml /etc/kubernetes/`
+- `--apiserver-advertise-address` można pominąć jeśli VM ma single NIC z prywatnym IP
+
+### Recovery jeśli cpnode2 zawisa na "learner not in sync"
+
+To znak że cpnode2 join wybrał publiczny IP. Cleanup + retry z flagą:
+
+```bash
+# Na cpnode2 — reset stanu kubeadm:
+sudo kubeadm reset -f
+sudo rm -rf /etc/kubernetes/pki /etc/kubernetes/manifests/etcd.yaml \
+            /etc/kubernetes/manifests/kube-apiserver.yaml \
+            /etc/kubernetes/manifests/kube-controller-manager.yaml \
+            /etc/kubernetes/manifests/kube-scheduler.yaml
+
+# Na cpnode1 — usuń stale etcd member learner:
+ETCD_POD=$(kubectl -n kube-system get pod -l component=etcd -o jsonpath='{.items[0].metadata.name}')
+kubectl -n kube-system exec $ETCD_POD -- etcdctl \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  --cert=/etc/kubernetes/pki/etcd/server.crt \
+  --key=/etc/kubernetes/pki/etcd/server.key \
+  member list
+# Skopiuj ID cpnode2, potem:
+kubectl -n kube-system exec $ETCD_POD -- etcdctl \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  --cert=/etc/kubernetes/pki/etcd/server.crt \
+  --key=/etc/kubernetes/pki/etcd/server.key \
+  member remove <cpnode2-id>
+
+# Z powrotem na cpnode2 — retry z flagą.
+# Jeśli minęły >2h od init: regeneruj cert-key na cpnode1: `kubeadm init phase upload-certs --upload-certs`
+```
 
 ## Część 5 — Join 3 worker nodów
 

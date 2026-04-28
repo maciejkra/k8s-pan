@@ -245,6 +245,32 @@ resource "null_resource" "cp_kube_vip" {
   }
 }
 
+# Zapisuje prywatny VPC IP na każdym dropletcie do /root/private_ip — kursant używa
+# w `kubeadm join --apiserver-advertise-address=$(cat /root/private_ip)` żeby wymusić
+# prywatny IP zamiast publicznego (na DO VPC oba IP są na jednym eth0; default route
+# wskazuje publiczny, więc kubeadm bez tej flagi wybiera publiczny dla apiserver+etcd).
+resource "null_resource" "write_private_ip" {
+  for_each = merge(
+    { for i, d in digitalocean_droplet.cpnode : "cp${i}" => d },
+    { for i, d in digitalocean_droplet.knode : "kn${i}" => d },
+  )
+
+  triggers = {
+    ip = each.value.ipv4_address_private
+  }
+
+  provisioner "remote-exec" {
+    inline = ["echo '${each.value.ipv4_address_private}' > /root/private_ip"]
+
+    connection {
+      type        = "ssh"
+      host        = each.value.ipv4_address
+      user        = "root"
+      private_key = file(var.pvt_key)
+    }
+  }
+}
+
 # /etc/hosts na każdym node — IDEMPOTENTNE (grep -qF zapobiega duplikatom przy re-apply).
 resource "null_resource" "update_hosts" {
   for_each = {
