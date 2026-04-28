@@ -34,13 +34,38 @@ ping -c 2 10.135.0.2    # knode1
 
 ## Część 2 — Setup pierwszego CP node (cpnode1)
 
-Na DO Terraform już ułożył całość: hostname, `/etc/hosts`, `/etc/kubernetes/{audit-policy,enc}.yaml`, `/etc/kubernetes/manifests/kube-vip.yaml` (vip_interface=eth0, address=10.135.0.100), `/root/kubeadm-config.yaml` z poprawnym `advertiseAddress` (real VPC IP) i `certSANs` (publiczne CP IP + LB IP). Wystarczy SSH i `kubeadm init`.
+### 2.1 — kube-vip jako STATIC POD (PRZED `kubeadm init`)
+
+**Po co**: kube-vip zapewnia HA dla apiservera. Wszystkie 3 CP biorą udział w **leader election** (Raft) na `Lease plndr-cp-lock`; aktywny leader programuje VIP (`10.135.0.100`) na swoim interfejsie. Padnie leader → kube-vip na innym CP w ciągu kilku sekund przejmuje VIP. `kubectl` z laptopa do `kubeapi.example.com:6443` (= VIP) ciągle działa.
+
+**Dlaczego static pod a nie DaemonSet**: kubelet czyta `/etc/kubernetes/manifests/` przy starcie node'a — kube-vip wstaje **przed** apiserverem, VIP gotowy gdy apiserver woła sam siebie. DaemonSet wymagałby działającego apiservera = chicken-and-egg.
+
+**Specyfika DO**: VPC blokuje gratuitous ARP (GARP), więc VIP `10.135.0.100` na DO **nie jest realnie osiągalny** między dropletami — leader election działa (przez API), ale ruch idzie przez DigitalOcean LB (`controlPlaneEndpoint: kubeapi.example.com:6443` → IP DO LB → losowy CP). Kube-vip zostaje dydaktycznie. Bare-metal/Multipass: VIP działa naturalnie.
+
+**Plik**: `kube-vip-static-pod.yaml` (image `ghcr.io/kube-vip/kube-vip:v1.1.2`). Kluczowe pola: `vip_interface` (eth0 na DO Ubuntu 24.04), `address` (`10.135.0.100`), `cp_enable=true` + `vip_leaderelection=true`.
+
+**DO** — Terraform już:
+- wyrenderował `kube-vip-static-pod.yaml.tpl` z `vip_interface=eth0`, `address=10.135.0.100`,
+- wrzucił go do `/etc/kubernetes/manifests/kube-vip.yaml` na **każdym** CP (cpnode1/2/3).
+
+**Bare-metal/Multipass** — ręcznie PRZED `kubeadm init`:
+```bash
+# Edytuj kube-vip-static-pod.yaml:
+#   vip_interface: eth0   # albo eth1/ens3 — `ip a` pokaże nazwy
+#   address: 10.135.0.100  # twój VIP
+sudo mkdir -p /etc/kubernetes/manifests
+sudo cp kube-vip-static-pod.yaml /etc/kubernetes/manifests/kube-vip.yaml
+```
+
+### 2.2 — kubeadm init na cpnode1
+
+Na DO Terraform również ułożył: hostname, `/etc/hosts`, `/etc/kubernetes/{audit-policy,enc}.yaml`, `/root/kubeadm-config.yaml` z `advertiseAddress` = real VPC IP + `certSANs` z publicznymi CP IP + LB IP.
 
 ```bash
 ssh root@<cpnode1-public-ip>     # `terraform output cpnode_ips` → pierwszy
 
-# (opcjonalnie zweryfikuj):
-grep advertiseAddress /root/kubeadm-config.yaml   # → real prywatny IP
+# (opcjonalnie zweryfikuj że Terraform poprawnie ustawił):
+grep advertiseAddress /root/kubeadm-config.yaml   # → real prywatny IP (np. 10.20.0.X)
 ls /etc/kubernetes/manifests/                     # → kube-vip.yaml
 cat /etc/hosts                                    # → 6 node + kubeapi.example.com
 
@@ -57,8 +82,6 @@ sudo kubeadm init --config /root/kubeadm-config.yaml --upload-certs \
 - `sudo hostnamectl set-hostname cpnode1`
 - Wklej `/etc/hosts` z pliku `./hosts` (podstaw realne IP swoich VM)
 - `sudo ip a a dev <iface> 10.135.0.100/32` — tymczasowy VIP (na DO bez sensu, VPC blokuje GARP)
-- Edytuj `kube-vip-static-pod.yaml`: `vip_interface` → twój interfejs, `address` → twój VIP
-- `sudo mkdir -p /etc/kubernetes/manifests && sudo cp kube-vip-static-pod.yaml /etc/kubernetes/manifests/kube-vip.yaml`
 - Edytuj `kubeadm-config.yaml`: `advertiseAddress` → IP cpnode1, `certSANs` → realne IP swoich CP
 
 Setup kubectl dla twojego usera:
