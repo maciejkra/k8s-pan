@@ -7,5 +7,7 @@ resources:
       - aescbc:
           keys:
             - name: key1
-              secret: TVtwGdP/awQIvr8/H+Vrvdoa6h7+vszz/h3THVLD/5Y=
+              # Wygeneruj swój klucz: head -c 32 /dev/urandom | base64
+              # NIE używaj tej wartości w produkcji — zastąp własną.
+              secret: REPLACE_ME_BASE64_32B
       - identity: {}

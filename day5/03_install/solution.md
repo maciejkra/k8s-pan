@@ -118,9 +118,11 @@ cilium status --wait
 kubectl get leases -n kube-system plndr-cp-lock
 # holderIdentity: cpnode1 (lub inny aktywny)
 
-# Test VIP dostępności
+# Test endpointa apiservera
 curl -sk https://kubeapi.example.com:6443/healthz
 # ok
+# Bare-metal: kubeapi → VIP kube-vip
+# DigitalOcean: kubeapi → publiczny IP DO LB (kube-vip działa tylko jako leader election demo)
 ```
 
 ## Troubleshooting
@@ -158,6 +160,10 @@ Przyczyna: network partition między CP nodami. Sprawdź `ping` latency między 
 ### `kubeadm join --control-plane` fails: `FileAvailable--etc-kubernetes-manifests-kube-vip.yaml`
 
 Zapomniałeś skopiować kube-vip-static-pod.yaml. Static pod jest wymagany PRZED join (tak jak przy init).
+
+### Na DigitalOcean: VIP nie odpowiada, ale klaster działa
+
+DigitalOcean VPC blokuje gratuitous ARP, więc kube-vip w trybie ARP nie programuje routingu między dropletami. Pod startuje, leader jest wybierany (`kubectl get leases -n kube-system plndr-cp-lock`), ale `curl https://10.135.0.100:6443/healthz` z innego node'a nie odpowiada. To **oczekiwane** — na DO endpoint `kubeapi.example.com` celuje w **DigitalOcean Load Balancer** (TCP passthrough na :6443), nie w VIP. kube-vip pokazujemy dydaktycznie. Failover zapewnia DO LB health-check (interval 5s × healthy_threshold 3 = ~15s do wyłączenia padniętego CP z puli).
 
 ## Cross-link
 

@@ -20,7 +20,7 @@ spec:
   hostNetwork: true
   containers:
     - name: kube-vip
-      image: ghcr.io/kube-vip/kube-vip:v1.0.4      # 2026 latest stable (luty 2026)
+      image: ghcr.io/kube-vip/kube-vip:v1.1.2      # stable
       imagePullPolicy: IfNotPresent
       args:
         - manager

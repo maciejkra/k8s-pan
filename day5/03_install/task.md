@@ -11,6 +11,13 @@ ping -c 2 10.135.0.7    # cpnode2
 ping -c 2 10.135.0.2    # knode1
 ```
 
+Wygeneruj klucz szyfrujący Secrets (placeholder w `kubernetes/enc.yaml`):
+```bash
+NEW_KEY=$(head -c 32 /dev/urandom | base64)
+sed -i.bak "s|REPLACE_ME_BASE64_32B|${NEW_KEY}|" kubernetes/enc.yaml
+grep secret kubernetes/enc.yaml
+```
+
 ## Część 1 — Przygotuj KAŻDY z 6 node'ów
 
 Skopiuj `prepare.sh` na każdy node i uruchom:
@@ -22,7 +29,7 @@ ssh user@<ip>
 chmod +x /tmp/prepare.sh && sudo /tmp/prepare.sh
 ```
 
-`prepare.sh` instaluje: containerd, kubeadm/kubelet/kubectl v1.34, sysctl (forwarding, bridge-nf), disable swap.
+`prepare.sh` instaluje: containerd, kubeadm/kubelet/kubectl v1.35, sysctl (forwarding, bridge-nf), disable swap, enable kubelet.
 
 ## Część 2 — Setup pierwszego CP node (cpnode1)
 
@@ -46,7 +53,7 @@ EOF
 
 # Dodaj VIP tymczasowo na tym node (żeby kubeadm init mógł dotrzeć do siebie przez VIP)
 # ZMIEŃ `eth1` na swój network interface (`ip a` pokaże nazwy)
-sudo ip a a dev eth1 10.135.0.100/24
+sudo ip a a dev eth1 10.135.0.100/32
 
 # Skopiuj kubernetes/* do /etc/kubernetes/ (audit + encryption)
 sudo mkdir -p /etc/kubernetes
@@ -66,6 +73,8 @@ sudo kubeadm init --config ./kubeadm-config.yaml --upload-certs \
   --skip-phases=addon/kube-proxy
 
 # ⚠️ ZACHOWAJ wyjście — są tam 2 komendy kubeadm join (dla CP i worker)!
+# Cert-key (--certificate-key) WYGASA po 2h. Jeśli przeciągniesz, regeneruj:
+#   sudo kubeadm init phase upload-certs --upload-certs
 ```
 
 Setup kubectl dla twojego usera:
@@ -88,7 +97,7 @@ sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
 rm cilium-linux-${CLI_ARCH}.tar.gz
 
 # Install Cilium z kube-proxy replacement
-cilium install --version 1.17.6 \
+cilium install --version 1.18.9 \
   --set kubeProxyReplacement=true \
   --set k8sServiceHost=kubeapi.example.com \
   --set k8sServicePort=6443
@@ -178,12 +187,15 @@ kubectl get leases -n kube-system plndr-cp-lock -o jsonpath='{.spec.holderIdenti
 Zgodnie z resztą training używamy **Envoy Gateway** (D2/07), nie NGINX Ingress:
 
 ```bash
-# Envoy Gateway
+# Envoy Gateway (stable z Docker Hub OCI)
 helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm \
-  --version v0.0.0-latest \
+  --version v1.7.2 \
   -n envoy-gateway-system --create-namespace
 
+kubectl -n envoy-gateway-system rollout status deploy/envoy-gateway --timeout=120s
+
 # cert-manager
+helm repo add jetstack https://charts.jetstack.io && helm repo update
 helm upgrade --install cert-manager jetstack/cert-manager \
   -n cert-manager --create-namespace \
   --set crds.enabled=true
@@ -199,7 +211,9 @@ for n in cpnode{1,2,3} knode{1,2,3}; do multipass delete $n; done
 multipass purge
 
 # DigitalOcean Terraform:
-cd terraform/ && terraform destroy -var="do_token=$DO_TOKEN"
+cd terraform/ && terraform destroy \
+  -var="do_token=$DO_TOKEN" \
+  -var="ssh_key_name=<twoja-nazwa-klucza-ssh-w-DO>"
 ```
 
 ## Pytania

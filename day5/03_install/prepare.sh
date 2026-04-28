@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Prepare Ubuntu 24.04 (or 22.04) node for kubeadm install (k8s v1.34).
+# Prepare Ubuntu 24.04 node for kubeadm install (k8s v1.35).
 # Uruchom na KAŻDYM z 6 node'ów jako root (lub sudo).
 set -euo pipefail
 
@@ -51,12 +51,12 @@ echo "==> Disable swap (kubelet wymaga)"
 sudo sed -i '/swap/d' /etc/fstab
 sudo swapoff -a
 
-echo "==> K8s v1.34 APT repo"
+echo "==> K8s v1.35 APT repo"
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https ca-certificates curl gpg
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.34/deb/Release.key | \
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.35/deb/Release.key | \
   sudo gpg --dearmor --yes -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.34/deb/ /' | \
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.35/deb/ /' | \
   sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 sudo apt-get update
@@ -65,6 +65,9 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install --allow-downgrades --allow-c
 
 # Hold packages — no unattended upgrade
 sudo apt-mark hold kubelet kubeadm kubectl
+
+# Enable kubelet (kubeadm init/join wystartuje go, ale po reboocie chcemy auto-start)
+sudo systemctl enable kubelet
 
 echo ""
 echo "=========================================="
