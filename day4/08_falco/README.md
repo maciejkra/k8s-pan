@@ -31,7 +31,7 @@ Output: structured logs (JSON) → SIEM (Splunk, Datadog, Elastic) lub **Falcosi
 
 **Jeśli `modern_ebpf` nie startuje**: sprawdź `kubectl logs -n falco <falco-pod>` — błąd "BPF program load failed" → spróbuj `ebpf` (legacy). Custom syscall rules mogą nie działać na bardzo starych kernelach.
 
-> **macOS Apple Silicon — known limitation:** Część 4 ćwiczenia (egress 4444 z workloadowego pod) **nie zafiruje** na Docker Desktop arm64. Falco widzi connect/sendto z własnego pod-a (Falco daemon → DNS, K8s API), ale syscall connect z kontenera użytkownika (`innocent-app`) nie pojawia się w buforze BPF. Sprawdzono empirycznie 2026-04 na Falco 0.43.1, kernel 6.12.76-linuxkit. Część 3 (zapis do `/etc/passwd`) **działa** — `openat` jest hookowany poprawnie. Dla pełnej walidacji Części 4 użyj Linuksa / WSL2 / maszyny x86 / klastra w chmurze.
+> **macOS Apple Silicon — known limitation:** Część 4 ćwiczenia (egress 4444 z workloadowego pod) **nie zafiruje** na Docker Desktop arm64. Falco widzi connect/sendto z własnego pod-a (Falco daemon → DNS, K8s API), ale syscall connect z kontenera użytkownika (`innocent-app`) nie pojawia się w buforze BPF. Część 3 (zapis do `/etc/passwd`) **działa** — `openat` jest hookowany poprawnie. Dla pełnej walidacji Części 4 użyj Linuksa / WSL2 / maszyny x86 / klastra w chmurze.
 
 ## Prereqs
 - K3s / Kind / K3d cluster

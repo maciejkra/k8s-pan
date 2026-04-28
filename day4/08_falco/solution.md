@@ -163,7 +163,7 @@ Częste: złe indentowanie YAML w `--set-file` (tabs vs spaces).
 
 ### macOS arm64 + modern_ebpf — limitacje LinuxKit
 
-LinuxKit kernel 6.12 na Docker Desktop arm64 ma **częściowe** wsparcie BPF tracepointów. Status zaobserwowany na Falco 0.43.1:
+LinuxKit kernel na Docker Desktop arm64 ma **częściowe** wsparcie BPF tracepointów:
 
 | Tracepoint | Status |
 |---|---|

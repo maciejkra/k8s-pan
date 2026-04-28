@@ -83,7 +83,7 @@ Spodziewane w logach Falco:
 ... Critical Podejrzane wyjście TCP na port 4444 (container=app dest=192.0.2.5:4444) ...
 ```
 
-> **macOS Apple Silicon / Docker Desktop arm64:** Część 4 NIE zafiruje. LinuxKit kernel poprawnie hookuje `connect`/`sendto` dla pod-ów hostowych (Falco daemon, falcoctl), ale syscall connect z workloadowego kontenera (innocent-app) jest niewidoczny w buforze BPF. Sprawdzono empirycznie z `nc`, `curl` i `wget` — żaden nie produkuje eventu. Na Linux / WSL2 / x86 — Część 4 działa. Część 3 (`/etc`) firuje na ARM64 normalnie.
+> **macOS Apple Silicon / Docker Desktop arm64:** Część 4 NIE zafiruje. LinuxKit kernel poprawnie hookuje `connect`/`sendto` dla pod-ów hostowych (Falco daemon, falcoctl), ale syscall connect z workloadowego kontenera (innocent-app) jest niewidoczny w buforze BPF — testowane z `nc`, `curl` i `wget`. Na Linux / WSL2 / x86 — Część 4 działa. Część 3 (`/etc`) firuje na ARM64 normalnie.
 
 ## Część 5 — Integracja z Slack przez Falcosidekick (bonus)
 
