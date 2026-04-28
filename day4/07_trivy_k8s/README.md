@@ -31,14 +31,18 @@ W D1/04 skanowaliśmy obrazy **przed** deployem (CI). To nie wystarczy:
      --set="operator.resources.requests.memory=256Mi" \
      --set="operator.resources.limits.memory=512Mi" \
      --set="operator.builtInTrivyServer=false" \
+     --set="nodeCollector.tolerations[0].key=node-role.kubernetes.io/control-plane" \
+     --set="nodeCollector.tolerations[0].operator=Exists" \
+     --set="nodeCollector.tolerations[0].effect=NoSchedule" \
      --version 0.32.1
    kubectl wait --for=condition=Available -n trivy-system deployment/trivy-operator --timeout=3m
    ```
 
-   > **Dlaczego custom limits + chart 0.32.1:**
+   > **Dlaczego custom limits + chart 0.32.1 + tolerations:**
    > - Default scan job ma `memory.limit=500M` — za mało dla obrazów Java/.NET (Log4Shell vulhub, distroless+JVM). OOMKilled scany NIE produkują VulnerabilityReport. Bumpujemy do 1G.
    > - Default operator deployment NIE ma `resources` (BestEffort QoS). Przy startupie cache sync z dużą liczbą resources w klastrze (Falco DS, Gatekeeper, vault, csi-driver, …) trwa >100s i liveness probe go ubija → CrashLoopBackOff. Eksplicitne `requests/limits` + Burstable QoS = stabilniejszy start.
    > - Chart `0.32.1` (operator binary 0.30.1) jest wymagany dla K8s 1.31+. Starsze (0.20.x → binary 0.18.x) nie znają warunku `SuccessCriteriaMet` na Job — reconcile fails z `unrecognized scan job condition`, scan kończy się sukcesem ale VulnerabilityReport nigdy nie powstaje.
+   > - `node-collector` jest pinowany na control-plane (czyta `/etc/kubernetes/manifests`, `/var/lib/etcd` dla raportów infrastructure-assessment), ale chart NIE dodaje toleracji `node-role.kubernetes.io/control-plane:NoSchedule`. Bez toleracji pod jest **Pending** — nie blokuje VulnerabilityReports, ale `clusterinfraassessmentreports` nie powstają. Toleracja inline → node-collector schedules.
 
 2. Wdroż celowo podatną aplikację:
    ```bash

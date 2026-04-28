@@ -14,6 +14,9 @@ helm install trivy-operator aqua/trivy-operator \
   --set="operator.resources.requests.memory=256Mi" \
   --set="operator.resources.limits.memory=512Mi" \
   --set="operator.builtInTrivyServer=false" \
+  --set="nodeCollector.tolerations[0].key=node-role.kubernetes.io/control-plane" \
+  --set="nodeCollector.tolerations[0].operator=Exists" \
+  --set="nodeCollector.tolerations[0].effect=NoSchedule" \
   --version 0.32.1
 
 kubectl wait --for=condition=Available -n trivy-system deployment/trivy-operator --timeout=3m
