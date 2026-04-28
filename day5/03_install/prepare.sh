@@ -3,6 +3,24 @@
 # Uruchom na KAŻDYM z 6 node'ów jako root (lub sudo).
 set -euo pipefail
 
+# Cloud bootstrap niezawodny: zaczekaj aż cloud-init skończy (DO + inne providery
+# odpalają unattended-upgrades przy pierwszym boot, blokuje dpkg lock), wycisz
+# noninteractive frontends, zmask serwisy bijące się o apt lock w trakcie skryptu.
+export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a
+export NEEDRESTART_SUSPEND=1
+
+if command -v cloud-init >/dev/null 2>&1; then
+  echo "==> Waiting for cloud-init to finish..."
+  sudo cloud-init status --wait || true
+fi
+
+echo "==> Masking unattended-upgrades + apt-daily timers"
+sudo systemctl mask --now \
+  apt-daily.service apt-daily-upgrade.service \
+  apt-daily.timer apt-daily-upgrade.timer \
+  unattended-upgrades.service 2>/dev/null || true
+
 echo "==> Waiting for apt/dpkg locks..."
 while sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1 \
    || sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 \
@@ -68,6 +86,20 @@ sudo apt-mark hold kubelet kubeadm kubectl
 
 # Enable kubelet (kubeadm init/join wystartuje go, ale po reboocie chcemy auto-start)
 sudo systemctl enable kubelet
+
+# Auto-patch advertiseAddress w /root/kubeadm-config.yaml (tylko CP node — terraform na DO
+# kopiuje ten plik). Wykryj real eth0 prywatny IP (VPC range 10.X / 172.16-31 / 192.168) —
+# `digitalocean_droplet.ipv4_address_private` zwraca legacy DO IP którego NIE ma na eth0.
+if [[ -f /root/kubeadm-config.yaml ]]; then
+  PRIV_IP=$(ip -4 -o addr show dev eth0 2>/dev/null | awk '{print $4}' | cut -d/ -f1 \
+    | grep -E '^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)' | head -1 || true)
+  if [[ -n "${PRIV_IP:-}" ]]; then
+    sudo sed -i 's|^\([ \t]*advertiseAddress:[ \t]*\).*$|\1"'"$PRIV_IP"'"|' /root/kubeadm-config.yaml
+    echo "==> Patched advertiseAddress in /root/kubeadm-config.yaml: $PRIV_IP"
+  else
+    echo "==> WARN: nie wykryto prywatnego IP na eth0 — advertiseAddress nietknięte"
+  fi
+fi
 
 echo ""
 echo "=========================================="

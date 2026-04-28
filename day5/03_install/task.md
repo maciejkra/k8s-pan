@@ -63,13 +63,16 @@ sudo mkdir -p /var/log/kubernetes/audit
 
 # Kluczowe: kube-vip jako STATIC POD, deploy PRZED kubeadm init
 # Edytuj kube-vip-static-pod.yaml:
-#  - vip_interface: eth1 → twoj interface
+#  - vip_interface: eth1 → twoj interface (DO Ubuntu 24.04: eth0; bare-metal: `ip a`)
 #  - address: 10.135.0.100 → twoj VIP
 sudo mkdir -p /etc/kubernetes/manifests
 sudo cp kube-vip-static-pod.yaml /etc/kubernetes/manifests/kube-vip.yaml
 
-# Init klastra (Cilium zastępuje kube-proxy — skip faze)
-sudo kubeadm init --config ./kubeadm-config.yaml --upload-certs \
+# Init klastra (Cilium zastępuje kube-proxy — skip faze).
+# UWAGA na DO: prepare.sh już zaktualizował advertiseAddress w /root/kubeadm-config.yaml
+# na real eth0 IP (sprawdź: `grep advertiseAddress /root/kubeadm-config.yaml`).
+# Bare-metal: zedytuj advertiseAddress + certSANs przed odpaleniem.
+sudo kubeadm init --config /root/kubeadm-config.yaml --upload-certs \
   --skip-phases=addon/kube-proxy
 
 # ⚠️ ZACHOWAJ wyjście — są tam 2 komendy kubeadm join (dla CP i worker)!
