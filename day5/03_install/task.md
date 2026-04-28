@@ -222,12 +222,20 @@ kubectl get leases -n kube-system plndr-cp-lock -o jsonpath='{.spec.holderIdenti
 Zgodnie z resztą training używamy **Envoy Gateway** (D2/07), nie NGINX Ingress:
 
 ```bash
-# Envoy Gateway (stable z Docker Hub OCI)
+# Envoy Gateway controller (stable z Docker Hub OCI)
 helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm \
   --version v1.7.2 \
   -n envoy-gateway-system --create-namespace
 
 kubectl -n envoy-gateway-system rollout status deploy/envoy-gateway --timeout=120s
+
+# DO-specific: Envoy data plane jako DaemonSet na każdym CP w hostNetwork.
+# Bez tego data plane = Deployment + Service:LoadBalancer pending (kubeadm bez
+# cloud-controllera). Z DaemonSet bind hostport 80/443 → DO LB control_plane_lb
+# (z terraform; rules 80/443 → tag control-plane) trafia bezpośrednio.
+# Plik nadpisuje też GatewayClass `eg` z parametersRef.
+kubectl apply -f envoy-proxy.yaml
+kubectl -n envoy-gateway-system rollout status ds -l gateway.envoyproxy.io/owning-gatewayclass=eg --timeout=120s 2>/dev/null || true
 
 # cert-manager
 helm repo add jetstack https://charts.jetstack.io && helm repo update
@@ -235,6 +243,10 @@ helm upgrade --install cert-manager jetstack/cert-manager \
   -n cert-manager --create-namespace \
   --set crds.enabled=true
 ```
+
+**Test po Bonus**: gdy zaaplikujesz Gateway resource (np. z D2/07: `kubectl apply -f day2/07_gateway_api/gateway-http.yaml`), `curl http://$(terraform -chdir=terraform output -raw control_plane_lb_ip)` trafi przez DO LB → CP host:80 → Envoy proxy → HTTPRoute backend.
+
+**Uwaga**: `day2/07_gateway_api/gateway-http.yaml` zawiera `GatewayClass eg` bez `parametersRef`. Jego `kubectl apply` **nadpisuje** override z `envoy-proxy.yaml` → Envoy wraca do default Deployment na worker. Re-apply: `kubectl apply -f envoy-proxy.yaml`. Idempotentne.
 
 Potem test demonstracji z D2/07 na tym prawdziwym klastrze.
 
