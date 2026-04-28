@@ -3,34 +3,13 @@
 # Uruchom na KAŻDYM z 6 node'ów jako root (lub sudo).
 set -euo pipefail
 
-# Niezawodny cloud bootstrap: zaczekaj aż cloud-init skończy (na DO + innych providerach
-# pierwszy boot odpala unattended-upgrades, co blokuje dpkg lock), wycisz noninteractive
-# frontends, zmask serwisy które biją się o apt lock w trakcie naszego skryptu.
-export DEBIAN_FRONTEND=noninteractive
-export NEEDRESTART_MODE=a
-export NEEDRESTART_SUSPEND=1
-
-if command -v cloud-init >/dev/null 2>&1; then
-  echo "==> Waiting for cloud-init to finish..."
-  sudo cloud-init status --wait || true
-fi
-
-echo "==> Masking unattended-upgrades + apt-daily timers"
-sudo systemctl mask --now \
-  apt-daily.service apt-daily-upgrade.service \
-  apt-daily.timer apt-daily-upgrade.timer \
-  unattended-upgrades.service 2>/dev/null || true
-
-echo "==> Waiting for apt/dpkg locks (defensywna pętla)..."
-for _ in $(seq 1 60); do
-  if ! sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1 \
-    && ! sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 \
-    && ! sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1 \
-    && ! sudo fuser /var/cache/apt/archives/lock >/dev/null 2>&1; then
-    break
-  fi
-  echo "  apt lock zajęty, czekam 5s..."
-  sleep 5
+echo "==> Waiting for apt/dpkg locks..."
+while sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1 \
+   || sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 \
+   || sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1 \
+   || sudo fuser /var/cache/apt/archives/lock >/dev/null 2>&1; do
+    echo "Waiting for other software managers to finish..."
+    sleep 10
 done
 
 echo "==> Install containerd (Docker APT repo)"

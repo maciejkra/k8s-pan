@@ -63,9 +63,11 @@ cat /etc/hosts
 #   sudo cp kubernetes/audit-policy.yaml kubernetes/enc.yaml /etc/kubernetes/
 sudo mkdir -p /var/log/kubernetes/audit
 
-# kube-vip jako STATIC POD — Terraform już wrzucił /etc/kubernetes/manifests/kube-vip.yaml
-# (vip_interface=eth0 dla DO). Sprawdź: `ls /etc/kubernetes/manifests/`.
-# Bare-metal: edytuj vip_interface w kube-vip-static-pod.yaml + cp do manifests/ ręcznie.
+# Kluczowe: kube-vip jako STATIC POD, deploy PRZED kubeadm init.
+# Terraform zrenderował już /root/kube-vip-static-pod.yaml (vip_interface=eth0 dla DO).
+# Bare-metal: w pliku kube-vip-static-pod.yaml edytujesz vip_interface (`ip a`) i address.
+sudo mkdir -p /etc/kubernetes/manifests
+sudo cp /root/kube-vip-static-pod.yaml /etc/kubernetes/manifests/kube-vip.yaml
 
 # Init klastra (Cilium zastępuje kube-proxy — skip faze).
 # Terraform zrenderował /root/kubeadm-config.yaml z prawidłowym advertiseAddress
@@ -118,10 +120,11 @@ ssh user@10.135.0.7
 sudo hostnamectl set-hostname cpnode2
 # ... kopia /etc/hosts ...
 
-# Terraform na DO już ułożył wszystkie pliki na cpnode2/3:
-#   /etc/kubernetes/manifests/kube-vip.yaml + /etc/kubernetes/{audit-policy,enc}.yaml.
-# Bare-metal: scp z cpnode1 zarówno kube-vip-static-pod.yaml (do manifests/) jak
-# audit-policy.yaml + enc.yaml (do /etc/kubernetes/) PRZED `kubeadm join`.
+# KLUCZOWE: kube-vip jako STATIC POD musi być w /etc/kubernetes/manifests/ PRZED join.
+# Terraform już skopiował na cpnode2/3 plik do /root/ + audit/enc do /etc/kubernetes/.
+# Bare-metal: scp z cpnode1 zarówno kube-vip-static-pod.yaml jak audit-policy.yaml + enc.yaml.
+sudo mkdir -p /etc/kubernetes/manifests
+sudo cp /root/kube-vip-static-pod.yaml /etc/kubernetes/manifests/kube-vip.yaml
 
 # Join jako CP (użyj komendy z wyjścia kubeadm init na cpnode1)
 sudo kubeadm join kubeapi.example.com:6443 \

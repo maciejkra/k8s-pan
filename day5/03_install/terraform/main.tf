@@ -219,9 +219,7 @@ resource "null_resource" "cp_kubeadm_config" {
   }
 }
 
-# Renderuje kube-vip-static-pod.yaml per CP node (vip_interface, vip_address) i wrzuca
-# do /etc/kubernetes/manifests/ — kubelet podniesie static pod automatycznie podczas
-# `kubeadm init` / `kubeadm join --control-plane`.
+# Renderuje kube-vip-static-pod.yaml per CP node (vip_interface, vip_address).
 resource "null_resource" "cp_kube_vip" {
   count      = 3
   depends_on = [digitalocean_droplet.cpnode]
@@ -231,40 +229,12 @@ resource "null_resource" "cp_kube_vip" {
     address = var.vip_address
   }
 
-  provisioner "remote-exec" {
-    inline = ["mkdir -p /etc/kubernetes/manifests"]
-
-    connection {
-      type        = "ssh"
-      host        = digitalocean_droplet.cpnode[count.index].ipv4_address
-      user        = "root"
-      private_key = file(var.pvt_key)
-    }
-  }
-
-  # /root/ — kursant może podejrzeć config (`cat /root/kube-vip-static-pod.yaml`)
   provisioner "file" {
     content = templatefile("${path.module}/kube-vip-static-pod.yaml.tpl", {
       vip_interface = var.vip_interface
       vip_address   = var.vip_address
     })
     destination = "/root/kube-vip-static-pod.yaml"
-
-    connection {
-      type        = "ssh"
-      host        = digitalocean_droplet.cpnode[count.index].ipv4_address
-      user        = "root"
-      private_key = file(var.pvt_key)
-    }
-  }
-
-  # /etc/kubernetes/manifests/ — kubelet czyta przy starcie (kubeadm init/join odpali kubelet).
-  provisioner "file" {
-    content = templatefile("${path.module}/kube-vip-static-pod.yaml.tpl", {
-      vip_interface = var.vip_interface
-      vip_address   = var.vip_address
-    })
-    destination = "/etc/kubernetes/manifests/kube-vip.yaml"
 
     connection {
       type        = "ssh"
