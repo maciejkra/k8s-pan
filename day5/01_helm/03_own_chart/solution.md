@@ -182,6 +182,36 @@ cache:
   auth: { enabled: false }
 ```
 
+### HTTPRoute w innym NS niż Gateway — `status` puste, brak routingu
+
+Gateway API: `parentRefs` w HTTPRoute domyślnie celuje w **TEN SAM namespace**. Jeśli chart instaluje aplikację (i jej HTTPRoute) w `python-api`, a `training-gateway` żyje w `default`, HTTPRoute szuka Gateway w `python-api` — nie znajduje, attach silently fails.
+
+Symptom:
+```bash
+kubectl get httproute -n python-api -o yaml | grep -A2 status:
+# status:
+#   parents: []          # albo brak status w ogóle
+```
++ `curl -H "Host: ..." http://<gateway>/...` zwraca **HTTP 000** lub 404.
+
+Fix: explicit `namespace` w `parentRefs`:
+```yaml
+spec:
+  parentRefs:
+    - name: training-gateway
+      namespace: default        # ← bez tego HTTPRoute nie attachuje się
+  hostnames: [python.127-0-0-1.nip.io]
+  rules: [...]
+```
+
+Dodatkowo Gateway musi pozwalać na cross-NS routes — `listeners[].allowedRoutes.namespaces.from: All` (lub explicit selector + `ReferenceGrant` w gateway-NS dla bardziej restrictive setup).
+
+Po fix:
+```bash
+kubectl get httproute -n python-api demo-uri -o jsonpath='{.status.parents[0].conditions[?(@.type=="Accepted")].status}'
+# True
+```
+
 ### `helm test` Pod Running forever
 
 Test Pod nie ma `restartPolicy: Never`. `helm create` scaffold ma OK, ale sprawdź:
