@@ -13,14 +13,17 @@ resource "random_bytes" "enc_key" {
 # którego NIE ma na interfejsie eth0 — kubeadm bind na advertiseAddress nie zadziała.
 # Z explicit VPC ipv4_address_private == VPC IP == real eth0 IP.
 resource "digitalocean_vpc" "k8s" {
-  name     = "k8s-training-vpc"
-  region   = "fra1"
-  ip_range = "10.135.0.0/20"
+  name   = "k8s-training-vpc"
+  region = "fra1"
+  # 10.20.0.0/20 — nie koliduje z default-fra1 (10.135.0.0/16), podSubnet (10.244.0.0/16),
+  # ani serviceSubnet (10.96.0.0/16). Daje 4096 IP — wystarczy dla 6 dropletów + zapas.
+  ip_range = "10.20.0.0/20"
 }
 
 resource "digitalocean_loadbalancer" "control_plane_lb" {
-  name   = "control-plane-lb"
-  region = "fra1"
+  name     = "control-plane-lb"
+  region   = "fra1"
+  vpc_uuid = digitalocean_vpc.k8s.id
 
   forwarding_rule {
     entry_protocol  = "tcp"
