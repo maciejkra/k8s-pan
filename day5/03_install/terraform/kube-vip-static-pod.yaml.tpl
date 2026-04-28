@@ -62,4 +62,7 @@ spec:
     - name: kubeconfig
       hostPath:
         path: /etc/kubernetes/admin.conf
-        type: FileOrCreate
+        # type: File (NIE FileOrCreate) — pod nie wstaje aż admin.conf realnie istnieje.
+        # FileOrCreate stworzyłby pusty plik gdy kubelet odpala pod przed kubeadm init/join,
+        # kube-vip wczytałby pusty kubeconfig → fallback do hostname `kubernetes` → DNS fail.
+        type: File
